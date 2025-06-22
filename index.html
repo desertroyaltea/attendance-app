@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Attendance Scanner</title>
+    <style>
+        body { font-family: Arial, sans-serif; display: flex; flex-direction: column; align-items: center; padding-top: 20px; }
+        #reader { width: 500px; max-width: 90%; border-radius: 8px; }
+        #result { margin-top: 20px; padding: 10px; font-size: 1.2em; text-align: center; }
+        .success { background-color: #d4edda; }
+        .error { background-color: #f8d7da; }
+    </style>
+</head>
+<body>
+    <h1>Attendance Scanner</h1>
+    <div id="reader"></div>
+    <div id="result"></div>
+
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <script>
+        const resultDiv = document.getElementById('result');
+        let isProcessing = false;
+
+        async function onScanSuccess(decodedText) {
+            if (isProcessing) return;
+            isProcessing = true;
+            resultDiv.textContent = `Processing: ${decodedText}...`;
+
+            try {
+                const response = await fetch('/.netlify/functions/log-attendance', {
+                    method: 'POST',
+                    body: JSON.stringify({ studentId: decodedText })
+                });
+
+                const data = await response.json();
+                resultDiv.textContent = data.message;
+                resultDiv.className = data.status;
+
+            } catch (error) {
+                resultDiv.textContent = 'Error communicating with server.';
+                resultDiv.className = 'error';
+            }
+
+            setTimeout(() => { isProcessing = false; }, 3000);
+        }
+
+        const html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 });
+        html5QrcodeScanner.render(onScanSuccess);
+    </script>
+</body>
+</html>
