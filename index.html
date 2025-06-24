@@ -139,13 +139,14 @@
         .error { background-color: var(--error-bg); color: var(--error-text); transform: scale(1.05); }
 
         footer { margin-top: 40px; font-size: 0.9em; color: #aaa; }
+        .credit { font-size: 0.8em; margin-top: 5px; }
     </style>
 </head>
 <body>
     <!-- Login Page Container -->
     <div id="login-page" class="container">
         <form id="login-form" class="login-form">
-            <h1>System Login</h1>
+            <h1>SRSI Attendance</h1>
             <div class="form-group">
                 <label for="username">Username</label>
                 <select id="username" name="username">
@@ -160,18 +161,22 @@
             <button type="submit" class="login-button">Login</button>
             <p id="login-error"></p>
         </form>
+        <footer>
+             <p class="credit">Made by: Abdulelah AlHarbi | SRSI23,24 EXCOR</p>
+        </footer>
     </div>
 
     <!-- Scanner Page Container -->
     <main id="scanner-page" class="container">
         <header>
-            <h1>Attendance Scanner</h1>
+            <h1>SRSI Attendance</h1>
             <p id="welcome-message"></p>
         </header>
         <section id="reader"></section>
         <section id="result" class="info">Ready to scan...</section>
         <footer>
-            <p>QR Code Attendance System</p>
+            <p>A.G.A Attendance System</p>
+            <p class="credit">Made by: Abdulelah AlHarbi | SRSI23,24 EXCOR</p>
         </footer>
     </main>
 
