@@ -77,7 +77,7 @@ exports.handler = async function (event) {
             return { statusCode: 400, body: JSON.stringify({ status: 'error', message: 'Student ID not provided.' }) };
         }
         if (!currentEvent) {
-            return { statusCode: 200, body: JSON.stringify({ status: 'error', message: 'No active event found in the Times sheet for the current date and time.' }) };
+            return { statusCode: 200, body: JSON.stringify({ status: 'error', message: 'Error: No active event!.' }) };
         }
 
         const week1SheetName = 'Week1';
