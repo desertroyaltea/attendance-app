@@ -3,22 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Attendance System</title>
+    <title>SRSI Attendance System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
-            --bg-color: #f4f7f9;
+            --primary-font: 'Poppins', sans-serif;
+            --bg-color: #f0f2f5;
             --card-bg: #ffffff;
-            --text-color: #2c3e50;
-            --success-bg: #e4f8f0;
+            --text-color: #333;
+            --heading-color: #1a253c;
+            --subtle-text: #888;
+            --primary-color: #2c5282; /* Deep Slate Blue */
+            --primary-hover: #2a4365;
+            --success-bg: #e6f7f2;
             --success-text: #28a745;
-            --error-bg: #fbe9e9;
-            --error-text: #dc3545;
-            --neutral-bg: #e9ecef;
-            --neutral-text: #495057;
-            --shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+            --error-bg: #fff1f0;
+            --error-text: #e53e3e;
+            --shadow: 0 7px 25px rgba(0, 0, 0, 0.08);
             --border-radius: 12px;
-            --primary-color: #007bff;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         body {
@@ -35,7 +44,7 @@
         }
 
         .container {
-            max-width: 500px;
+            max-width: 450px;
             width: 100%;
             text-align: center;
         }
@@ -43,14 +52,31 @@
         /* --- Login Page Styles --- */
         .login-form {
             background: var(--card-bg);
-            padding: 40px;
+            padding: 40px 35px;
             border-radius: var(--border-radius);
             box-shadow: var(--shadow);
+            animation: fadeIn 0.5s ease-out;
         }
 
-        .login-form h1 {
-            margin-top: 0;
+        .login-form .form-header, .scanner-header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
             margin-bottom: 30px;
+        }
+        
+        .icon {
+            width: 40px;
+            height: 40px;
+            color: var(--primary-color);
+        }
+        
+        .login-form h1 {
+            margin: 0;
+            font-size: 1.8em;
+            color: var(--heading-color);
+            font-weight: 700;
         }
 
         .form-group {
@@ -62,16 +88,26 @@
             display: block;
             margin-bottom: 8px;
             font-weight: 600;
+            font-size: 0.9em;
         }
 
         .form-group select,
         .form-group input {
             width: 100%;
-            padding: 12px;
+            padding: 14px;
             border-radius: 8px;
-            border: 1px solid #ccc;
+            border: 1px solid #ddd;
+            background-color: #f9fafb;
             box-sizing: border-box;
             font-size: 1em;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        
+        .form-group select:focus,
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(44, 82, 130, 0.1);
         }
 
         .login-button {
@@ -84,36 +120,41 @@
             font-size: 1.1em;
             font-weight: 600;
             cursor: pointer;
-            transition: background-color 0.2s;
+            transition: all 0.2s ease-in-out;
         }
         
         .login-button:hover {
-            background-color: #0056b3;
+            background-color: var(--primary-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         }
 
         #login-error {
             color: var(--error-text);
             margin-top: 15px;
             height: 20px;
+            font-weight: 500;
         }
 
         /* --- Scanner Page Styles --- */
         #scanner-page {
             display: none; /* Hidden by default */
+            animation: fadeIn 0.5s ease-out;
         }
         
-        header h1 {
-            font-size: 2.5em;
+        header #scanner-title {
+            font-size: 2.2em;
             font-weight: 700;
-            margin-bottom: 10px; /* Reduced margin */
+            color: var(--heading-color);
+            margin: 0;
         }
         
         #welcome-message {
             font-size: 1.1em;
             font-weight: 500;
-            color: var(--neutral-text);
-            margin-top: 0;
-            margin-bottom: 30px;
+            color: var(--subtle-text);
+            margin-top: 5px;
+            margin-bottom: 25px;
         }
 
         #reader {
@@ -121,7 +162,7 @@
             border-radius: var(--border-radius);
             box-shadow: var(--shadow);
             overflow: hidden;
-            margin-bottom: 30px;
+            border: 1px solid #eee;
         }
         
         #result {
@@ -132,13 +173,14 @@
             transition: all 0.3s ease-in-out;
             min-height: 30px;
             line-height: 1.5;
+            margin-bottom: 25px;
         }
 
-        .info { background-color: var(--neutral-bg); color: var(--neutral-text); }
-        .success { background-color: var(--success-bg); color: var(--success-text); transform: scale(1.05); }
-        .error { background-color: var(--error-bg); color: var(--error-text); transform: scale(1.05); }
+        .info { background-color: #f0f2f5; color: var(--text-color); }
+        .success { background-color: var(--success-bg); color: var(--success-text); transform: scale(1.03); box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .error { background-color: var(--error-bg); color: var(--error-text); transform: scale(1.03); box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
 
-        footer { margin-top: 40px; font-size: 0.9em; color: #aaa; }
+        footer { margin-top: 30px; font-size: 0.9em; color: var(--subtle-text); }
         .credit { font-size: 0.8em; margin-top: 5px; }
     </style>
 </head>
@@ -146,7 +188,10 @@
     <!-- Login Page Container -->
     <div id="login-page" class="container">
         <form id="login-form" class="login-form">
-            <h1>SRSI Attendance</h1>
+            <div class="form-header">
+                <svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M15 3h6v6h-2V5h-4V3zM9 3v2H5v4H3V3h6zm6 18v-2h4v-4h2v6h-6zm-6 0H3v-6h2v4h4v2zM3 11h18v2H3v-2z"/></svg>
+                <h1>SRSI Attendance</h1>
+            </div>
             <div class="form-group">
                 <label for="username">Username</label>
                 <select id="username" name="username">
@@ -169,11 +214,14 @@
     <!-- Scanner Page Container -->
     <main id="scanner-page" class="container">
         <header>
-            <h1>SRSI Attendance</h1>
+            <div class="scanner-header">
+                <svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M15 3h6v6h-2V5h-4V3zM9 3v2H5v4H3V3h6zm6 18v-2h4v-4h2v6h-6zm-6 0H3v-6h2v4h4v2zM3 11h18v2H3v-2z"/></svg>
+                <h1 id="scanner-title">SRSI Attendance</h1>
+            </div>
             <p id="welcome-message"></p>
         </header>
-        <section id="reader"></section>
         <section id="result" class="info">Ready to scan...</section>
+        <section id="reader"></section>
         <footer>
             <p>A.G.A Attendance System</p>
             <p class="credit">Made by: Abdulelah AlHarbi | SRSI23,24 EXCOR</p>
@@ -189,33 +237,27 @@
         const loginError = document.getElementById('login-error');
         const welcomeMessage = document.getElementById('welcome-message');
 
-        // Store credentials securely in code
         const credentials = {
             "Abdulelah": "1212",
             "Wasan": "2121"
         };
 
         loginForm.addEventListener('submit', function(event) {
-            event.preventDefault(); // Prevent form from reloading the page
-            
+            event.preventDefault(); 
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
 
             if (credentials[username] && credentials[username] === password) {
-                // Correct credentials
-                welcomeMessage.textContent = `Welcome EXCOR ${username}!`; // Set the welcome message
+                welcomeMessage.textContent = `Welcome EXCOR ${username}!`;
                 loginPage.style.display = 'none';
                 scannerPage.style.display = 'block';
-                startScanner(); // Initialize the scanner only after successful login
+                startScanner();
             } else {
-                // Incorrect credentials
                 loginError.textContent = 'Invalid username or password.';
             }
         });
 
-
         // --- SCANNER LOGIC ---
-        // This function will now be called only after a successful login
         function startScanner() {
             const resultDiv = document.getElementById('result');
             let isProcessing = false;
@@ -223,7 +265,6 @@
             async function onScanSuccess(decodedText) {
                 if (isProcessing) return;
                 isProcessing = true;
-
                 resultDiv.textContent = `Processing: ${decodedText}...`;
                 resultDiv.className = 'info';
 
@@ -232,11 +273,9 @@
                         method: 'POST',
                         body: JSON.stringify({ studentId: decodedText })
                     });
-
                     const data = await response.json();
                     resultDiv.textContent = data.message;
                     resultDiv.className = data.status;
-
                 } catch (error) {
                     resultDiv.textContent = 'Error communicating with server.';
                     resultDiv.className = 'error';
@@ -249,11 +288,9 @@
                 }, 4000);
             }
 
-            function onScanError(errorMessage) {
-                // This function can be used for logging scanner errors if needed.
-            }
+            function onScanError(errorMessage) {}
 
-            const html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 });
+            const html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: { width: 250, height: 250 } }, false);
             html5QrcodeScanner.render(onScanSuccess, onScanError);
         }
     </script>
