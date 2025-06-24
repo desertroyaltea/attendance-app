@@ -111,10 +111,14 @@ exports.handler = async function (event) {
     const pointsLogSheetName = 'Points';
     const pointsLogData = [saudiTime.toLocaleString('en-US', { timeZone: 'Asia/Riyadh' }), studentName, excorName, pointsChange > 0 ? `+${pointsChange}` : pointsChange.toString(), reason];
     await sheets.spreadsheets.values.append({ spreadsheetId, range: pointsLogSheetName, valueInputOption: 'USER_ENTERED', resource: { values: [pointsLogData] } });
+    
+    // --- NEW: Updated Confirmation Message ---
+    const actionVerb = action === 'add' ? 'Added' : 'Removed';
+    const successMessage = `${actionVerb} ${points} points for ${studentName}!`;
 
     return {
       statusCode: 200,
-      body: JSON.stringify({ status: 'success', message: `Updated points for ${studentName} to ${newStudentPoints}.` }),
+      body: JSON.stringify({ status: 'success', message: successMessage }),
     };
 
   } catch (error) {

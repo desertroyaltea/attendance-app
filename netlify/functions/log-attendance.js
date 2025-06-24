@@ -26,7 +26,11 @@ async function getCurrentEvent(sheets, spreadsheetId, date) {
             const endTime = parseInt(row[3]);
             // Check if the current time is between the start and end times
             if (currentTime >= startTime && currentTime <= endTime) {
-                return row[1]; // Return the event name (from Column B)
+                // Return an object with both the name and the start time
+                return {
+                    name: row[1],
+                    startTime: startTime
+                };
             }
         }
     }
@@ -86,7 +90,7 @@ exports.handler = async function (event) {
         let targetColumnIndex = -1;
         for (let i = 0; i < eventHeaderRow.length; i++) {
             const sheetEvent = (eventHeaderRow[i] || '').trim().toLowerCase();
-            const expectedEvent = currentEvent.toLowerCase();
+            const expectedEvent = currentEvent.name.toLowerCase();
             const headerDate = dateHeaderRow[i] ? new Date(dateHeaderRow[i]).toLocaleDateString('en-US', { timeZone: 'Asia/Riyadh' }) : null;
             
             if (sheetEvent === expectedEvent && headerDate === todayDateString) {
@@ -96,7 +100,7 @@ exports.handler = async function (event) {
         }
 
         if (targetColumnIndex === -1) {
-            return { statusCode: 200, body: JSON.stringify({ status: 'error', message: `Could not find column for Event: '${currentEvent}' on today's date.` }) };
+            return { statusCode: 200, body: JSON.stringify({ status: 'error', message: `Could not find column for Event: '${currentEvent.name}' on today's date.` }) };
         }
 
         let targetRowIndex = -1;
@@ -115,10 +119,21 @@ exports.handler = async function (event) {
         const existingValue = (rows[targetRowIndex] && rows[targetRowIndex][targetColumnIndex]) ? rows[targetRowIndex][targetColumnIndex] : null;
 
         if (existingValue && existingValue.trim() !== "") {
-            return { statusCode: 200, body: JSON.stringify({ status: 'error', message: `${studentName} has already been checked in for ${currentEvent}!` }) };
+            return { statusCode: 200, body: JSON.stringify({ status: 'error', message: `${studentName} has already been checked in for ${currentEvent.name}!` }) };
         }
 
-        const valueToWrite = saudiTime.getMinutes().toString();
+        // --- NEW: Calculate minutes since event start ---
+        const eventStartHour = Math.floor(currentEvent.startTime / 100);
+        const eventStartMinute = currentEvent.startTime % 100;
+        
+        const eventStartDate = new Date(saudiTime);
+        eventStartDate.setHours(eventStartHour, eventStartMinute, 0, 0);
+
+        const diffMs = saudiTime - eventStartDate;
+        const minutesSinceStart = Math.floor(diffMs / 60000);
+        // ------------------------------------------
+
+        const valueToWrite = minutesSinceStart.toString();
         const cellA1Notation = toA1(targetColumnIndex) + (targetRowIndex + 1);
 
         await sheets.spreadsheets.values.update({
@@ -130,7 +145,7 @@ exports.handler = async function (event) {
 
         return {
             statusCode: 200,
-            body: JSON.stringify({ status: 'success', message: `Checked in ${studentName} for ${currentEvent}!` }),
+            body: JSON.stringify({ status: 'success', message: `Checked in ${studentName} for ${currentEvent.name}!` }),
         };
 
     } catch (error) {
