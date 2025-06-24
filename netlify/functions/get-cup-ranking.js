@@ -1,18 +1,19 @@
 const { google } = require('googleapis');
 
-async function calculateSheetPoints(sheets, spreadsheetId, sheetName) {
+// This function now calculates points and returns student names, their group, and their points.
+async function calculateSheetData(sheets, spreadsheetId, sheetName) {
     const response = await sheets.spreadsheets.values.get({
         spreadsheetId,
-        range: `${sheetName}!A1:BQ48`, // Fetch a wide range to ensure all data is included
+        range: `${sheetName}!A1:BQ48`, 
     });
 
     const rows = response.data.values || [];
     if (rows.length < 4) {
-        return {}; // Not enough data to process
+        return []; // Return empty array if not enough data
     }
 
     const eventHeaderRow = rows[0]; // Events are in Row 1
-    const studentPoints = {};
+    const studentData = [];
 
     // Find all columns that are 'Daily Points'
     const pointColumnIndices = [];
@@ -25,9 +26,11 @@ async function calculateSheetPoints(sheets, spreadsheetId, sheetName) {
     // Iterate through student rows (starting from row 4, which is index 3)
     for (let i = 3; i < rows.length; i++) {
         const studentRow = rows[i];
-        if (!studentRow || !studentRow[1]) continue; // Skip if no student name
+        // Ensure row has a student name (col C, index 2) and an EXCOR group (col B, index 1)
+        if (!studentRow || !studentRow[1] || !studentRow[2]) continue; 
 
         const studentName = studentRow[1].trim();
+        const excorGroup = studentRow[2].trim();
         let totalPoints = 0;
 
         // Sum points only from the 'Daily Points' columns
@@ -38,15 +41,10 @@ async function calculateSheetPoints(sheets, spreadsheetId, sheetName) {
             }
         }
         
-        // Use hasOwnProperty check for safety
-        if (Object.prototype.hasOwnProperty.call(studentPoints, studentName)) {
-            studentPoints[studentName] += totalPoints;
-        } else {
-            studentPoints[studentName] = totalPoints;
-        }
+        studentData.push({ name: studentName, group: excorGroup, points: totalPoints });
     }
     
-    return studentPoints;
+    return studentData;
 }
 
 
@@ -56,9 +54,9 @@ exports.handler = async function (event) {
     }
 
     try {
-        const { week } = JSON.parse(event.body);
-        if (!week) {
-            return { statusCode: 400, body: JSON.stringify({ message: 'Week not specified.' }) };
+        const { week, type } = JSON.parse(event.body); // Now expects 'type' (student or group)
+        if (!week || !type) {
+            return { statusCode: 400, body: JSON.stringify({ message: 'Week or type not specified.' }) };
         }
 
         const auth = new google.auth.GoogleAuth({
@@ -72,36 +70,38 @@ exports.handler = async function (event) {
         const sheets = google.sheets({ version: 'v4', auth });
         const spreadsheetId = process.env.GOOGLE_SHEET_ID;
 
-        let finalPoints = {};
+        let aggregatedData = [];
 
         if (week.toLowerCase() === 'total') {
             const weekSheets = ['Week1', 'Week2', 'Week3', 'Week4', 'Week5', 'Week6'];
-            const allStudentNames = new Set();
-            const weeklyPointsData = [];
-            
-            // First pass to get all weekly data and all unique student names
             for(const sheetName of weekSheets) {
-                const points = await calculateSheetPoints(sheets, spreadsheetId, sheetName);
-                Object.keys(points).forEach(name => allStudentNames.add(name));
-                weeklyPointsData.push(points);
-            }
-
-            // Initialize final points for all students
-            allStudentNames.forEach(name => finalPoints[name] = 0);
-            
-            // Sum up the points
-            for(const weeklyResult of weeklyPointsData) {
-                 for(const studentName in weeklyResult) {
-                     if (Object.prototype.hasOwnProperty.call(finalPoints, studentName)) {
-                         finalPoints[studentName] += weeklyResult[studentName];
-                     }
-                 }
+                const weeklyData = await calculateSheetData(sheets, spreadsheetId, sheetName);
+                aggregatedData = aggregatedData.concat(weeklyData);
             }
         } else {
-            finalPoints = await calculateSheetPoints(sheets, spreadsheetId, week);
+            aggregatedData = await calculateSheetData(sheets, spreadsheetId, week);
         }
 
-        // Convert to array and sort
+        let finalPoints = {};
+
+        if (type === 'group') {
+            // Aggregate points by EXCOR group
+            for (const student of aggregatedData) {
+                if(student.group){
+                   finalPoints[student.group] = (finalPoints[student.group] || 0) + student.points;
+                }
+            }
+        } else { // Default to student ranking
+            // Aggregate points by student name
+             for (const student of aggregatedData) {
+                if(student.name){
+                   finalPoints[student.name] = (finalPoints[student.name] || 0) + student.points;
+                }
+            }
+        }
+
+
+        // Convert the aggregated points map to an array and sort it
         const rankedList = Object.entries(finalPoints)
             .map(([name, points]) => ({ name, points }))
             .sort((a, b) => b.points - a.points);
