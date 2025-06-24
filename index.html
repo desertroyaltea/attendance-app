@@ -23,18 +23,23 @@
             --error-text: #e53e3e;
             --shadow: 0 7px 25px rgba(0, 0, 0, 0.08);
             --border-radius: 12px;
+            --gold: #ffd700;
+            --silver: #c0c0c0;
+            --bronze: #cd7f32;
         }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
         body { font-family: var(--primary-font); background-color: var(--bg-color); color: var(--text-color); margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; box-sizing: border-box; }
         .container { max-width: 450px; width: 100%; text-align: center; }
-        .page { display: none; animation: fadeIn 0.5s ease-out; } /* All pages are hidden by default */
+        .page { display: none; animation: fadeIn 0.5s ease-out; }
         .page.active { display: block; }
 
         /* Shared Styles */
         .card { background: var(--card-bg); padding: 40px 35px; border-radius: var(--border-radius); box-shadow: var(--shadow); }
         .form-header, .page-header { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; margin-bottom: 30px; }
         .logo { width: 180px; height: 180px; }
-        h1 { margin: 0; font-size: 1.8em; color: var(--heading-color); font-weight: 700; }
+        h1, h2 { margin: 0; color: var(--heading-color); font-weight: 700; }
+        h1 { font-size: 1.8em; }
+        h2 { font-size: 1.5em; }
         .form-group { margin-bottom: 20px; text-align: left; }
         .form-group label { display: block; margin-bottom: 8px; font-weight: 600; font-size: 0.9em; }
         select, input { width: 100%; padding: 14px; border-radius: 8px; border: 1px solid #ddd; background-color: #f9fafb; box-sizing: border-box; font-size: 1em; transition: border-color 0.2s, box-shadow 0.2s; }
@@ -44,80 +49,71 @@
         .status-message { color: var(--error-text); margin-top: 15px; min-height: 20px; font-weight: 500; }
         footer { margin-top: 30px; font-size: 0.9em; color: var(--subtle-text); }
         .credit { font-size: 0.8em; margin-top: 5px; }
+        .back-button { margin-top: 20px; background-color: #6c757d; }
+        .back-button:hover { background-color: #5a6268; }
 
         /* Menu Page Styles */
         .menu-buttons { display: flex; flex-direction: column; gap: 15px; }
         #welcome-message { font-size: 1.1em; font-weight: 500; color: var(--subtle-text); margin-top: 5px; margin-bottom: 25px; }
-        
+        #goto-cup { display: none; background-color: var(--gold); color: #333; } /* Hidden by default */
+        #goto-cup:hover { background-color: #e6c300; }
+
         /* Scanner & Points Page Styles */
         #reader { background-color: var(--card-bg); border-radius: var(--border-radius); box-shadow: var(--shadow); overflow: hidden; border: 1px solid #eee; }
         #result, #points-result { font-size: 1.2em; font-weight: 500; padding: 20px; border-radius: var(--border-radius); transition: all 0.3s ease-in-out; min-height: 30px; line-height: 1.5; margin-bottom: 25px; }
         .info { background-color: #f0f2f5; color: var(--text-color); }
-        .success { background-color: var(--success-bg); color: var(--success-text); transform: scale(1.03); }
-        .error { background-color: var(--error-bg); color: var(--error-text); transform: scale(1.03); }
+        .success { background-color: var(--success-bg); color: var(--success-text); }
+        .error { background-color: var(--error-bg); color: var(--error-text); }
         .button-group { display: flex; gap: 10px; }
         .button.add { background-color: #28a745; }
         .button.add:hover { background-color: #218838; }
         .button.remove { background-color: #dc3545; }
         .button.remove:hover { background-color: #c82333; }
-        .back-button { margin-top: 20px; background-color: #6c757d; }
-        .back-button:hover { background-color: #5a6268; }
         #excor-balance { font-weight: 600; color: var(--primary-color); margin-bottom: 20px; }
+
+        /* Leaderboard Styles */
+        #leaderboard-display { margin-top: 20px; text-align: left; }
+        .leaderboard-item { display: flex; align-items: center; padding: 10px; margin-bottom: 8px; background-color: #f9fafb; border-radius: 8px; border: 1px solid #eee; }
+        .leaderboard-item .rank { font-size: 1.2em; font-weight: 700; color: var(--subtle-text); width: 40px; }
+        .leaderboard-item .name { font-weight: 600; flex-grow: 1; }
+        .leaderboard-item .points { font-size: 1.1em; font-weight: 700; color: var(--primary-color); }
+        .leaderboard-item.rank-1 .rank { color: var(--gold); }
+        .leaderboard-item.rank-2 .rank { color: var(--silver); }
+        .leaderboard-item.rank-3 .rank { color: var(--bronze); }
+        .loader { border: 4px solid #f3f3f3; border-top: 4px solid var(--primary-color); border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 20px auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
     </style>
 </head>
 <body>
     <!-- Login Page -->
     <div id="login-page" class="page active container">
-        <div class="card">
-            <div class="form-header"><img src="assets/logo.png" alt="SRSI Logo" class="logo"><h1>The EXCOR System</h1></div>
-            <form id="login-form">
-                <div class="form-group"><label for="username">Username</label><select id="username" name="username"><option value="Umairah">Umairah 🇲🇾</option><option value="Wasan">Wasan</option></select></div>
-                <div class="form-group"><label for="password">Password</label><input type="password" id="password" name="password" required></div>
-                <button type="submit" class="button">Login</button>
-                <p id="login-error" class="status-message"></p>
-            </form>
-        </div>
+        <div class="card"><div class="form-header"><img src="assets/logo.png" alt="SRSI Logo" class="logo"><h1>The EXCOR System</h1></div><form id="login-form"><div class="form-group"><label for="username">Username</label><select id="username" name="username"><option value="Umairah">Umairah 🇲🇾</option><option value="Wasan">Wasan</option></select></div><div class="form-group"><label for="password">Password</label><input type="password" id="password" name="password" required></div><button type="submit" class="button">Login</button><p id="login-error" class="status-message"></p></form></div>
         <footer><p class="credit">Made by: Abdulelah AlHarbi | SRSI23,24 EXCOR</p></footer>
     </div>
 
     <!-- Menu Page -->
     <div id="menu-page" class="page container">
-        <div class="card">
-            <div class="page-header"><img src="assets/logo.png" alt="SRSI Logo" class="logo"></div>
-            <p id="welcome-message"></p>
-            <div class="menu-buttons">
-                <button id="goto-attendance" class="button">Attendance</button>
-                <button id="goto-points" class="button">EXCOR Points</button>
-            </div>
-        </div>
+        <div class="card"><div class="page-header"><img src="assets/logo.png" alt="SRSI Logo" class="logo"></div><p id="welcome-message"></p><div class="menu-buttons"><button id="goto-attendance" class="button">Attendance</button><button id="goto-points" class="button">EXCOR Points</button><button id="goto-cup" class="button">EXCOR Cup</button></div></div>
          <footer><p class="credit">Made by: Abdulelah AlHarbi | SRSI23,24 EXCOR</p></footer>
     </div>
 
     <!-- Scanner Page -->
     <div id="scanner-page" class="page container">
-        <section id="result" class="info">Ready to scan...</section>
-        <section id="reader"></section>
-        <button class="button back-button">Back to Menu</button>
+        <section id="result" class="info">Ready to scan...</section><section id="reader"></section><button class="button back-button">Back to Menu</button>
         <footer><p>The EXCOR System</p><p class="credit">Made by: Abdulelah AlHarbi | SRSI23,24 EXCOR</p></footer>
     </div>
 
     <!-- Points Page -->
     <div id="points-page" class="page container">
-        <div class="card">
-            <h2>EXCOR Points</h2>
-            <p id="excor-balance">Your Balance: Loading...</p>
-            <div class="form-group"><label for="student-select">Select Student</label><select id="student-select" name="student-select"><option>Loading students...</option></select></div>
-            <div class="form-group"><label for="points-input">Points</label><input type="number" id="points-input" placeholder="e.g., 5" required></div>
-            <div class="form-group"><label for="reason-input">Reason</label><input type="text" id="reason-input" placeholder="e.g., Won competition" required></div>
-            <div class="button-group">
-                <button id="add-points" class="button add">Add +</button>
-                <button id="remove-points" class="button remove">Remove -</button>
-            </div>
-             <p id="points-result" class="status-message"></p>
-        </div>
-        <button class="button back-button">Back to Menu</button>
-        <footer><p class="credit">Made by: Abdulelah AlHarbi | SRSI23,24 EXCOR</p></footer>
+        <div class="card"><h2>EXCOR Points</h2><p id="excor-balance">Your Balance: Loading...</p><div class="form-group"><label for="student-select">Select Student</label><select id="student-select" name="student-select"><option>Loading students...</option></select></div><div class="form-group"><label for="points-input">Points</label><input type="number" id="points-input" placeholder="e.g., 5" required></div><div class="form-group"><label for="reason-input">Reason</label><input type="text" id="reason-input" placeholder="e.g., Won competition" required></div><div class="button-group"><button id="add-points" class="button add">Add +</button><button id="remove-points" class="button remove">Remove -</button></div><p id="points-result" class="status-message"></p></div>
+        <button class="button back-button">Back to Menu</button><footer><p class="credit">Made by: Abdulelah AlHarbi | SRSI23,24 EXCOR</p></footer>
+    </div>
+
+    <!-- EXCOR Cup Ranking Page -->
+    <div id="cup-page" class="page container">
+        <div class="card"><h2>EXCOR Cup Rankings</h2><div class="form-group"><label for="week-select">Select Week</label><select id="week-select"><option value="">-- Choose a week --</option><option value="Week1">Week 1</option><option value="Week2">Week 2</option><option value="Week3">Week 3</option><option value="Week4">Week 4</option><option value="Week5">Week 5</option><option value="Week6">Week 6</option><option value="Total">Total</option></select></div><div id="leaderboard-display"></div></div>
+        <button class="button back-button">Back to Menu</button><footer><p class="credit">Made by: Abdulelah AlHarbi | SRSI23,24 EXCOR</p></footer>
     </div>
 
     <script src="https://unpkg.com/html5-qrcode"></script>
@@ -127,6 +123,7 @@
         const welcomeMessage = document.getElementById('welcome-message');
         const studentSelect = document.getElementById('student-select');
         const excorBalanceEl = document.getElementById('excor-balance');
+        const cupButton = document.getElementById('goto-cup');
 
         const credentials = { "Umairah": "1212", "Wasan": "2121" };
         let scanner = null;
@@ -136,13 +133,87 @@
             pages.forEach(page => page.classList.remove('active'));
             document.getElementById(pageId).classList.add('active');
         }
+        
+        loginForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const errorEl = document.getElementById('login-error');
 
+            if (credentials[username] && credentials[username] === password) {
+                loggedInUser = username;
+                welcomeMessage.textContent = `Welcome EXCOR ${username}!`;
+                if (username === 'Wasan') {
+                    cupButton.style.display = 'block';
+                } else {
+                    cupButton.style.display = 'none';
+                }
+                showPage('menu-page');
+            } else {
+                errorEl.textContent = 'Invalid username or password.';
+            }
+        });
+
+        document.getElementById('goto-attendance').addEventListener('click', () => { showPage('scanner-page'); startScanner(); });
+        document.getElementById('goto-points').addEventListener('click', () => { showPage('points-page'); fetchExcorBalance(); if (studentSelect.options.length <= 1) { populateStudents(); } });
+        document.getElementById('goto-cup').addEventListener('click', () => { showPage('cup-page'); });
+        
+        document.querySelectorAll('.back-button').forEach(button => {
+            button.addEventListener('click', () => {
+                if (scanner) { try { scanner.clear(); } catch(e) {} scanner = null; }
+                showPage('menu-page');
+            });
+        });
+
+        const weekSelect = document.getElementById('week-select');
+        const leaderboardDisplay = document.getElementById('leaderboard-display');
+        
+        weekSelect.addEventListener('change', async function() {
+            const selectedWeek = this.value;
+            if (!selectedWeek) {
+                leaderboardDisplay.innerHTML = '';
+                return;
+            }
+            leaderboardDisplay.innerHTML = '<div class="loader"></div>';
+
+            try {
+                const response = await fetch('/.netlify/functions/get-cup-ranking', {
+                    method: 'POST',
+                    body: JSON.stringify({ week: selectedWeek })
+                });
+                if (!response.ok) throw new Error('Failed to fetch rankings');
+                const data = await response.json();
+                renderLeaderboard(data);
+            } catch (error) {
+                leaderboardDisplay.innerHTML = '<p class="error">Could not load rankings.</p>';
+            }
+        });
+
+        function renderLeaderboard(data) {
+            leaderboardDisplay.innerHTML = '';
+            if (data.length === 0) {
+                leaderboardDisplay.innerHTML = '<p>No points data found for this week.</p>';
+                return;
+            }
+            data.forEach((student, index) => {
+                const rank = index + 1;
+                const item = document.createElement('div');
+                item.className = `leaderboard-item rank-${rank}`;
+                item.innerHTML = `
+                    <div class="rank">#${rank}</div>
+                    <div class="name">${student.name}</div>
+                    <div class="points">${student.points} pts</div>
+                `;
+                leaderboardDisplay.appendChild(item);
+            });
+        }
+        
         async function populateStudents() {
             try {
                 const response = await fetch('/.netlify/functions/get-students');
                 if (!response.ok) throw new Error('Network response was not ok');
                 const students = await response.json();
-                studentSelect.innerHTML = ''; 
+                studentSelect.innerHTML = '';
                 students.forEach(student => {
                     const option = document.createElement('option');
                     option.value = student;
@@ -155,24 +226,20 @@
         }
 
         async function fetchExcorBalance() {
-            // I've removed the debugging alert and added better error handling.
             excorBalanceEl.textContent = 'Your Balance: Loading...';
             if (!loggedInUser) {
                 excorBalanceEl.textContent = 'Your Balance: Error - Not logged in.';
                 return;
             }
-
             try {
                 const response = await fetch('/.netlify/functions/get-excor-balance', {
                     method: 'POST',
                     body: JSON.stringify({ excorName: loggedInUser })
                 });
-
                 if (!response.ok) {
                     const errorText = await response.text();
                     throw new Error(`Failed to fetch balance. Server responded with: ${response.status} ${errorText}`);
                 }
-
                 const data = await response.json();
                 if (typeof data.balance !== 'undefined') {
                     excorBalanceEl.textContent = `Your Balance: ${data.balance} Points`;
@@ -185,44 +252,6 @@
             }
         }
 
-        loginForm.addEventListener('submit', function(event) {
-            event.preventDefault();
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
-            const errorEl = document.getElementById('login-error');
-
-            if (credentials[username] && credentials[username] === password) {
-                loggedInUser = username;
-                welcomeMessage.textContent = `Welcome EXCOR ${username}!`;
-                showPage('menu-page');
-            } else {
-                errorEl.textContent = 'Invalid username or password.';
-            }
-        });
-
-        document.getElementById('goto-attendance').addEventListener('click', () => {
-            showPage('scanner-page');
-            startScanner();
-        });
-
-        document.getElementById('goto-points').addEventListener('click', () => {
-            showPage('points-page');
-            fetchExcorBalance();
-            if (studentSelect.options.length <= 1) {
-                populateStudents();
-            }
-        });
-
-        document.querySelectorAll('.back-button').forEach(button => {
-            button.addEventListener('click', () => {
-                if (scanner) {
-                    try { scanner.clear(); } catch(e) {}
-                    scanner = null;
-                }
-                showPage('menu-page');
-            });
-        });
-        
         async function handlePoints(action) {
             const studentName = studentSelect.value;
             const points = document.getElementById('points-input').value;
@@ -252,17 +281,16 @@
                 resultEl.textContent = data.message;
                 resultEl.className = `status-message ${data.status}`;
                 if (data.status === 'success') {
-                    fetchExcorBalance(); // Refresh balance on success
+                    fetchExcorBalance();
                 }
             } catch (error) {
                  resultEl.textContent = 'Error communicating with server.';
                  resultEl.className = 'status-message error';
             }
         }
-
         document.getElementById('add-points').addEventListener('click', () => handlePoints('add'));
         document.getElementById('remove-points').addEventListener('click', () => handlePoints('remove'));
-        
+
         function startScanner() {
             if (scanner) return;
             const resultDiv = document.getElementById('result');
