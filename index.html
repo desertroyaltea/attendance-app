@@ -41,7 +41,7 @@
         select:focus, input:focus { outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 3px rgba(44, 82, 130, 0.1); }
         .button { width: 100%; padding: 15px; border: none; border-radius: 8px; background-color: var(--primary-color); color: white; font-size: 1.1em; font-weight: 600; cursor: pointer; transition: all 0.2s ease-in-out; }
         .button:hover { background-color: var(--primary-hover); transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        .status-message { color: var(--error-text); margin-top: 15px; height: 20px; font-weight: 500; }
+        .status-message { color: var(--error-text); margin-top: 15px; min-height: 20px; font-weight: 500; }
         footer { margin-top: 30px; font-size: 0.9em; color: var(--subtle-text); }
         .credit { font-size: 0.8em; margin-top: 5px; }
 
@@ -62,6 +62,7 @@
         .button.remove:hover { background-color: #c82333; }
         .back-button { margin-top: 20px; background-color: #6c757d; }
         .back-button:hover { background-color: #5a6268; }
+        #excor-balance { font-weight: 600; color: var(--primary-color); margin-bottom: 20px; }
 
     </style>
 </head>
@@ -69,10 +70,7 @@
     <!-- Login Page -->
     <div id="login-page" class="page active container">
         <div class="card">
-            <div class="form-header">
-                <img src="assets/logo.png" alt="SRSI Logo" class="logo">
-                <h1>The EXCOR System</h1>
-            </div>
+            <div class="form-header"><img src="assets/logo.png" alt="SRSI Logo" class="logo"><h1>The EXCOR System</h1></div>
             <form id="login-form">
                 <div class="form-group"><label for="username">Username</label><select id="username" name="username"><option value="Umairah">Umairah 🇲🇾</option><option value="Wasan">Wasan</option></select></div>
                 <div class="form-group"><label for="password">Password</label><input type="password" id="password" name="password" required></div>
@@ -108,9 +106,10 @@
     <div id="points-page" class="page container">
         <div class="card">
             <h2>EXCOR Points</h2>
+            <p id="excor-balance">Your Balance: Loading...</p>
             <div class="form-group"><label for="student-select">Select Student</label><select id="student-select" name="student-select"><option>Loading students...</option></select></div>
             <div class="form-group"><label for="points-input">Points</label><input type="number" id="points-input" placeholder="e.g., 5" required></div>
-            <div class="form-group"><label for="reason-input">Reason</label><input type="text" id="reason-input" placeholder="e.g., Being an idiot" required></div>
+            <div class="form-group"><label for="reason-input">Reason</label><input type="text" id="reason-input" placeholder="e.g., Won competition" required></div>
             <div class="button-group">
                 <button id="add-points" class="button add">Add +</button>
                 <button id="remove-points" class="button remove">Remove -</button>
@@ -127,10 +126,11 @@
         const loginForm = document.getElementById('login-form');
         const welcomeMessage = document.getElementById('welcome-message');
         const studentSelect = document.getElementById('student-select');
+        const excorBalanceEl = document.getElementById('excor-balance');
 
         const credentials = { "Umairah": "1212", "Wasan": "2121" };
         let scanner = null;
-        let loggedInUser = null; // Variable to store the logged-in user's name
+        let loggedInUser = null;
 
         function showPage(pageId) {
             pages.forEach(page => page.classList.remove('active'));
@@ -151,7 +151,37 @@
                 });
             } catch (error) {
                 studentSelect.innerHTML = '<option>Could not load students</option>';
-                console.error('Error fetching students:', error);
+            }
+        }
+
+        async function fetchExcorBalance() {
+            // I've removed the debugging alert and added better error handling.
+            excorBalanceEl.textContent = 'Your Balance: Loading...';
+            if (!loggedInUser) {
+                excorBalanceEl.textContent = 'Your Balance: Error - Not logged in.';
+                return;
+            }
+
+            try {
+                const response = await fetch('/.netlify/functions/get-excor-balance', {
+                    method: 'POST',
+                    body: JSON.stringify({ excorName: loggedInUser })
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Failed to fetch balance. Server responded with: ${response.status} ${errorText}`);
+                }
+
+                const data = await response.json();
+                if (typeof data.balance !== 'undefined') {
+                    excorBalanceEl.textContent = `Your Balance: ${data.balance} Points`;
+                } else {
+                    throw new Error('Balance not found in server response.');
+                }
+            } catch (error) {
+                console.error("fetchExcorBalance Error:", error);
+                excorBalanceEl.textContent = 'Your Balance: Could not load.';
             }
         }
 
@@ -162,7 +192,7 @@
             const errorEl = document.getElementById('login-error');
 
             if (credentials[username] && credentials[username] === password) {
-                loggedInUser = username; // Store the username
+                loggedInUser = username;
                 welcomeMessage.textContent = `Welcome EXCOR ${username}!`;
                 showPage('menu-page');
             } else {
@@ -177,6 +207,7 @@
 
         document.getElementById('goto-points').addEventListener('click', () => {
             showPage('points-page');
+            fetchExcorBalance();
             if (studentSelect.options.length <= 1) {
                 populateStudents();
             }
@@ -185,7 +216,7 @@
         document.querySelectorAll('.back-button').forEach(button => {
             button.addEventListener('click', () => {
                 if (scanner) {
-                    try { scanner.clear(); } catch(e) { console.error("Scanner clear failed", e); }
+                    try { scanner.clear(); } catch(e) {}
                     scanner = null;
                 }
                 showPage('menu-page');
@@ -195,7 +226,7 @@
         async function handlePoints(action) {
             const studentName = studentSelect.value;
             const points = document.getElementById('points-input').value;
-            const reason = document.getElementById('reason-input').value; // Get the reason
+            const reason = document.getElementById('reason-input').value;
             const resultEl = document.getElementById('points-result');
 
             if (!points || parseInt(points) <= 0) {
@@ -215,11 +246,14 @@
             try {
                 const response = await fetch('/.netlify/functions/manage-points', {
                     method: 'POST',
-                    body: JSON.stringify({ studentName, points: parseInt(points), action, reason, excorName: loggedInUser }) // Send all data
+                    body: JSON.stringify({ studentName, points: parseInt(points), action, reason, excorName: loggedInUser })
                 });
                 const data = await response.json();
                 resultEl.textContent = data.message;
                 resultEl.className = `status-message ${data.status}`;
+                if (data.status === 'success') {
+                    fetchExcorBalance(); // Refresh balance on success
+                }
             } catch (error) {
                  resultEl.textContent = 'Error communicating with server.';
                  resultEl.className = 'status-message error';
