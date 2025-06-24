@@ -75,7 +75,7 @@ exports.handler = async function (event) {
 
     let targetColumnIndex = -1;
     for (let i = 0; i < eventHeaderRow.length; i++) {
-        if (((eventHeaderRow[i] || '').trim().toLowerCase() === 'daily points ') && (dateHeaderRow[i] ? formatDate(new Date(dateHeaderRow[i])) : null) === todayString) {
+        if (((eventHeaderRow[i] || '').trim().toLowerCase() === 'daily points') && (dateHeaderRow[i] ? formatDate(new Date(dateHeaderRow[i])) : null) === todayString) {
             targetColumnIndex = i;
             break;
         }
@@ -84,7 +84,7 @@ exports.handler = async function (event) {
     if (targetColumnIndex === -1) {
         // If we fail here, we must refund the EXCOR's points
         await sheets.spreadsheets.values.update({ spreadsheetId, range: `${excorSheetName}!${excorCellToUpdate}`, valueInputOption: 'USER_ENTERED', resource: { values: [[currentExcorBalance]] } });
-        return { statusCode: 200, body: JSON.stringify({ status: 'error', message: `Error; please contact Abdulelah.` }) };
+        return { statusCode: 200, body: JSON.stringify({ status: 'error', message: `Could not find 'Daily Points' column for today in Week1.` }) };
     }
 
     let targetRowIndex = -1;
