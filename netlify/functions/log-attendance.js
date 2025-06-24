@@ -1,26 +1,41 @@
 const { google } = require('googleapis');
 
-// --- EVENT SCHEDULE ---
-// Define the time frames for each event in 24-hour format.
-const eventSchedule = [
-    { name: 'Breakfast', start: 7, end: 9 },   // 7:00 AM - 9:00 AM
-    { name: 'Lunch', start: 12, end: 14 },     // 12:00 PM - 2:00 PM
-    { name: 'Dinner', start: 18, end: 20 },    // 6:00 PM - 8:00 PM
-];
-// --------------------
+// Helper to find the correct event from the Times sheet using a start and end time
+async function getCurrentEvent(sheets, spreadsheetId, date) {
+    // Get today's date in a comparable format, e.g., "6/24/2025"
+    const todayString = date.toLocaleDateString('en-US', { timeZone: 'Asia/Riyadh' });
+    // Get current time as a number, e.g., 9:45 AM -> 945, 4:20 PM -> 1620
+    const currentTime = date.getHours() * 100 + date.getMinutes();
 
-// Helper function to get the current event based on the time
-function getCurrentEvent(date) {
-    const currentHour = date.getHours();
-    for (const event of eventSchedule) {
-        if (currentHour >= event.start && currentHour < event.end) {
-            return event.name;
+    const response = await sheets.spreadsheets.values.get({
+        spreadsheetId,
+        range: 'Times!A:D', // Update range to include the new End Time column
+    });
+
+    const schedules = response.data.values || [];
+    
+    // Find an event for today where the current time is within the event's window
+    for (const row of schedules) {
+        // Ensure row has enough columns (Date, Event, Start, End) to avoid errors
+        if (!row || !row[0] || !row[1] || !row[2] || !row[3]) continue;
+
+        const scheduleDate = new Date(row[0]).toLocaleDateString('en-US', { timeZone: 'Asia/Riyadh' });
+        
+        if (scheduleDate === todayString) {
+            const startTime = parseInt(row[2]);
+            const endTime = parseInt(row[3]);
+            // Check if the current time is between the start and end times
+            if (currentTime >= startTime && currentTime <= endTime) {
+                return row[1]; // Return the event name (from Column B)
+            }
         }
     }
-    return null; // No event is currently active
+    
+    // If no event is found after checking all rows, return null
+    return null;
 }
 
-// Helper function to convert a 0-based column index to A1 notation (e.g., 0 -> A, 1 -> B)
+
 function toA1(colIndex) {
     let column = "";
     let temp = colIndex + 1;
@@ -40,15 +55,6 @@ exports.handler = async function (event) {
     try {
         const saudiTime = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Riyadh' }));
         const { studentId } = JSON.parse(event.body);
-        const currentEvent = getCurrentEvent(saudiTime);
-        
-        if (!studentId) {
-            return { statusCode: 400, body: JSON.stringify({ status: 'error', message: 'Student ID not provided.' }) };
-        }
-        if (!currentEvent) {
-            const currentHour = saudiTime.getHours();
-            return { statusCode: 200, body: JSON.stringify({ status: 'error', message: `No event is currently active. Current time: ${currentHour}:00 AST.` }) };
-        }
 
         const auth = new google.auth.GoogleAuth({
             credentials: {
@@ -60,37 +66,37 @@ exports.handler = async function (event) {
 
         const sheets = google.sheets({ version: 'v4', auth });
         const spreadsheetId = process.env.GOOGLE_SHEET_ID;
-        const sheetName = 'Week1';
 
-        const response = await sheets.spreadsheets.values.get({
-            spreadsheetId,
-            range: `${sheetName}!A:AZ`,
-        });
-
-        const rows = response.data.values || [];
-        if (rows.length < 2) {
-             return { statusCode: 500, body: JSON.stringify({ status: 'error', message: 'Sheet has fewer than 2 rows. Cannot read headers.' }) };
+        const currentEvent = await getCurrentEvent(sheets, spreadsheetId, saudiTime);
+        
+        if (!studentId) {
+            return { statusCode: 400, body: JSON.stringify({ status: 'error', message: 'Student ID not provided.' }) };
         }
-        
-        const eventHeaderRow = rows[0]; // Events are in Row 1
-        const dateHeaderRow = rows[1];  // Dates are in Row 2
-        
-        const todayString = saudiTime.toLocaleDateString('en-US', { timeZone: 'Asia/Riyadh' });
-        
+        if (!currentEvent) {
+            return { statusCode: 200, body: JSON.stringify({ status: 'error', message: 'No active event found in the Times sheet for the current date and time.' }) };
+        }
+
+        const week1SheetName = 'Week1';
+        const response = await sheets.spreadsheets.values.get({ spreadsheetId, range: `${week1SheetName}!A:AZ` });
+        const rows = response.data.values || [];
+        const eventHeaderRow = rows[0];
+        const dateHeaderRow = rows[1];
+        const todayDateString = saudiTime.toLocaleDateString('en-US', { timeZone: 'Asia/Riyadh' });
+
         let targetColumnIndex = -1;
         for (let i = 0; i < eventHeaderRow.length; i++) {
-            const sheetEvent = eventHeaderRow[i] ? eventHeaderRow[i].trim().toLowerCase() : null;
+            const sheetEvent = (eventHeaderRow[i] || '').trim().toLowerCase();
             const expectedEvent = currentEvent.toLowerCase();
-            const headerDate = dateHeaderRow[i] ? new Date(dateHeaderRow[i]).toLocaleDateString('en-US') : null;
+            const headerDate = dateHeaderRow[i] ? new Date(dateHeaderRow[i]).toLocaleDateString('en-US', { timeZone: 'Asia/Riyadh' }) : null;
             
-            if (sheetEvent === expectedEvent && headerDate === todayString) {
+            if (sheetEvent === expectedEvent && headerDate === todayDateString) {
                 targetColumnIndex = i;
                 break;
             }
         }
 
         if (targetColumnIndex === -1) {
-            return { statusCode: 200, body: JSON.stringify({ status: 'error', message: `Could not find column for Event: '${currentEvent}' on Date: '${todayString}'.` }) };
+            return { statusCode: 200, body: JSON.stringify({ status: 'error', message: `Could not find column for Event: '${currentEvent}' on today's date.` }) };
         }
 
         let targetRowIndex = -1;
@@ -106,21 +112,18 @@ exports.handler = async function (event) {
         }
         
         const studentName = rows[targetRowIndex][1];
-
-        // --- ROBUST CHECK FOR EXISTING VALUE ---
-        // This safely checks if the cell exists and has a non-empty value.
         const existingValue = (rows[targetRowIndex] && rows[targetRowIndex][targetColumnIndex]) ? rows[targetRowIndex][targetColumnIndex] : null;
+
         if (existingValue && existingValue.trim() !== "") {
             return { statusCode: 200, body: JSON.stringify({ status: 'error', message: `${studentName} has already been checked in for ${currentEvent}!` }) };
         }
-        // ------------------------------------------
 
         const valueToWrite = saudiTime.getMinutes().toString();
         const cellA1Notation = toA1(targetColumnIndex) + (targetRowIndex + 1);
 
         await sheets.spreadsheets.values.update({
             spreadsheetId,
-            range: `${sheetName}!${cellA1Notation}`,
+            range: `${week1SheetName}!${cellA1Notation}`,
             valueInputOption: 'USER_ENTERED',
             resource: { values: [[valueToWrite]] },
         });
