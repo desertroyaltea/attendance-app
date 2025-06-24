@@ -12,15 +12,26 @@ function toA1(colIndex) {
     return column;
 }
 
+// Helper function to format a date object into YYYY-MM-DD for reliable comparison
+function formatDate(date) {
+    const year = date.getFullYear();
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const day = date.getDate().toString().padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+
 exports.handler = async function (event) {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: 'Method Not Allowed' };
   }
 
   try {
-    const { studentName, points, action } = JSON.parse(event.body);
+    const { studentName, points, action, reason, excorName } = JSON.parse(event.body);
     const saudiTime = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Riyadh' }));
-    const todayString = saudiTime.toLocaleDateString('en-US');
+    
+    // Use the new robust date formatting function
+    const todayString = formatDate(saudiTime);
 
     const auth = new google.auth.GoogleAuth({
       credentials: {
@@ -32,42 +43,40 @@ exports.handler = async function (event) {
 
     const sheets = google.sheets({ version: 'v4', auth });
     const spreadsheetId = process.env.GOOGLE_SHEET_ID;
-    const sheetName = 'Week1';
-
-    const response = await sheets.spreadsheets.values.get({
+    
+    // --- Update Daily Points in Week1 Sheet ---
+    const week1SheetName = 'Week1';
+    const week1Data = await sheets.spreadsheets.values.get({
       spreadsheetId,
-      range: `${sheetName}!A:AZ`, // Fetch all relevant columns
+      range: `${week1SheetName}!A:AZ`,
     });
 
-    const rows = response.data.values || [];
+    const rows = week1Data.data.values || [];
     if (rows.length < 4) {
-      return { statusCode: 500, body: JSON.stringify({ status: 'error', message: 'Sheet has too few rows.' }) };
+      return { statusCode: 500, body: JSON.stringify({ status: 'error', message: 'Week1 sheet has too few rows.' }) };
     }
 
-    // Headers are now in Row 1 (Events) and Row 2 (Dates)
     const eventHeaderRow = rows[0];
     const dateHeaderRow = rows[1];
 
-    // Find the 'Daily Points' column for today's date
     let targetColumnIndex = -1;
     for (let i = 0; i < eventHeaderRow.length; i++) {
         const sheetEvent = (eventHeaderRow[i] || '').trim().toLowerCase();
-        const headerDate = dateHeaderRow[i] ? new Date(dateHeaderRow[i]).toLocaleDateString('en-US') : null;
+        // Also format the date from the sheet in the same way before comparing
+        const headerDate = dateHeaderRow[i] ? formatDate(new Date(dateHeaderRow[i])) : null;
 
-        if (sheetEvent === 'EXCOR Points' && headerDate === todayString) {
+        if (sheetEvent === 'daily points' && headerDate === todayString) {
             targetColumnIndex = i;
             break;
         }
     }
 
     if (targetColumnIndex === -1) {
-        return { statusCode: 200, body: JSON.stringify({ status: 'error', message: `Could not find 'EXCOR Points' column for today.` }) };
+        return { statusCode: 200, body: JSON.stringify({ status: 'error', message: `Could not find 'Daily Points' column for today in Week1.` }) };
     }
 
-    // Find the student's row by name (starting from row 4, which is index 3)
     let targetRowIndex = -1;
     for (let i = 3; i < rows.length; i++) {
-        // Column B is index 1
         if (rows[i] && (rows[i][1] || '').trim() === studentName) {
             targetRowIndex = i;
             break;
@@ -75,27 +84,48 @@ exports.handler = async function (event) {
     }
 
     if (targetRowIndex === -1) {
-        return { statusCode: 200, body: JSON.stringify({ status: 'error', message: `Student '${studentName}' not found.` }) };
+        return { statusCode: 200, body: JSON.stringify({ status: 'error', message: `Student '${studentName}' not found in Week1.` }) };
     }
 
-    // Get current points, defaulting to 0 if the cell is empty
     const currentPoints = parseInt(rows[targetRowIndex][targetColumnIndex] || '0');
     let newPoints = 0;
+    let pointsChange = 0;
 
     if (action === 'add') {
-      newPoints = currentPoints + points;
+      pointsChange = points;
+      newPoints = currentPoints + pointsChange;
     } else if (action === 'remove') {
-      newPoints = currentPoints - points;
+      pointsChange = -points; // Make the number negative for removal
+      newPoints = currentPoints + pointsChange;
     }
 
     const cellToUpdate = toA1(targetColumnIndex) + (targetRowIndex + 1);
-
     await sheets.spreadsheets.values.update({
       spreadsheetId,
-      range: `${sheetName}!${cellToUpdate}`,
+      range: `${week1SheetName}!${cellToUpdate}`,
       valueInputOption: 'USER_ENTERED',
       resource: { values: [[newPoints]] },
     });
+
+    // --- Log the transaction in the Points Sheet ---
+    const pointsLogSheetName = 'Points';
+    const pointsLogData = [
+        saudiTime.toLocaleString('en-US', { timeZone: 'Asia/Riyadh' }), // A: Date and Time
+        studentName, // B: Student Name
+        excorName,   // C: EXCOR Name
+        pointsChange > 0 ? `+${pointsChange}` : pointsChange.toString(), // D: Points +/-
+        reason,      // E: Reason
+    ];
+
+    await sheets.spreadsheets.values.append({
+        spreadsheetId,
+        range: pointsLogSheetName,
+        valueInputOption: 'USER_ENTERED',
+        resource: {
+            values: [pointsLogData],
+        },
+    });
+
 
     return {
       statusCode: 200,
