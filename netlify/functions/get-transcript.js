@@ -45,17 +45,11 @@ exports.handler = async function (event) {
             const entryDateString = getLocaleDateString(row[0]);
 
             if (entryDateString === requestedDateString) {
-                // De-structure the row to get all the needed values, including the new group from Column F (index 5)
-                const [ , studentName, excorName, points, reason, studentExcorGroup] = row;
+                // De-structure the row to get all the needed values
+                const [ , , excorName, points, reason, studentExcorGroup] = row;
                 
-                // --- FIX: Use the student's name in the log, not the group ---
-                // The original request was to replace the student name, but it's better to show both.
-                // Let's create a more descriptive log entry. If the group is logged, we'll use it.
-                
-                const targetName = studentExcorGroup ? `${studentName} (${studentExcorGroup})` : studentName;
-                
-                // Format the entry exactly as requested, using the correct name
-                const entryText = `EXCOR ${excorName || 'N/A'} gave ${targetName || 'N/A'} ${points || 'N/A'} points for: ${reason || 'N/A'}`;
+                // Format the entry exactly as requested
+                const entryText = `EXCOR ${excorName || 'N/A'} gave ${studentExcorGroup || 'N/A'} ${points || 'N/A'} points for: ${reason || 'N/A'}`;
                 transcriptEntries.push(entryText);
             }
         }
