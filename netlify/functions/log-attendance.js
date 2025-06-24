@@ -10,8 +10,9 @@ const eventSchedule = [
 // --------------------
 
 // Helper function to get the current event based on the time
-function getCurrentEvent() {
-    const currentHour = new Date().getHours();
+// It now accepts a date object to make it testable and timezone-aware
+function getCurrentEvent(date) {
+    const currentHour = date.getHours();
     for (const event of eventSchedule) {
         if (currentHour >= event.start && currentHour < event.end) {
             return event.name;
@@ -38,16 +39,20 @@ exports.handler = async function (event) {
     }
 
     try {
-        const { studentId } = JSON.parse(event.body);
-        const currentEvent = getCurrentEvent();
-        const currentDate = new Date();
-        const todayString = `${currentDate.getMonth() + 1}/${currentDate.getDate()}/${currentDate.getFullYear()}`;
+        // --- TIMEZONE FIX ---
+        // Create a new Date object that represents the current time in Saudi Arabia (AST)
+        const saudiTime = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Riyadh' }));
+        // --------------------
 
+        const { studentId } = JSON.parse(event.body);
+        const currentEvent = getCurrentEvent(saudiTime);
+        
         if (!studentId) {
             return { statusCode: 400, body: JSON.stringify({ status: 'error', message: 'Student ID not provided.' }) };
         }
         if (!currentEvent) {
-            return { statusCode: 200, body: JSON.stringify({ status: 'error', message: 'No event is currently active for check-in.' }) };
+            const currentHour = saudiTime.getHours();
+            return { statusCode: 200, body: JSON.stringify({ status: 'error', message: `No event is currently active. Current time: ${currentHour}:00 AST.` }) };
         }
 
         const auth = new google.auth.GoogleAuth({
@@ -64,7 +69,7 @@ exports.handler = async function (event) {
 
         const response = await sheets.spreadsheets.values.get({
             spreadsheetId,
-            range: sheetName, // Fetches the entire sheet
+            range: `${sheetName}!A:AZ`, // Fetch a reasonable number of columns
         });
 
         const rows = response.data.values || [];
@@ -74,29 +79,29 @@ exports.handler = async function (event) {
         
         const dateHeaderRow = rows[0];
         const eventHeaderRow = rows[1];
+        const todayString = saudiTime.toLocaleDateString('en-US', { timeZone: 'Asia/Riyadh' });
         
         // --- Find the correct column ---
         let targetColumnIndex = -1;
         for (let i = 0; i < dateHeaderRow.length; i++) {
-            // Normalize dates for reliable comparison
-            const headerDate = dateHeaderRow[i] ? new Date(dateHeaderRow[i]).toLocaleDateString() : null;
-            const todayDate = new Date(todayString).toLocaleDateString();
+            // Normalize dates from sheet for reliable comparison
+            const headerDate = dateHeaderRow[i] ? new Date(dateHeaderRow[i]).toLocaleDateString('en-US') : null;
             
             // Check if the date matches today AND the event matches the current event
-            if (headerDate === todayDate && eventHeaderRow[i] && eventHeaderRow[i].toLowerCase() === currentEvent.toLowerCase()) {
+            if (headerDate === todayString && eventHeaderRow[i] && eventHeaderRow[i].toLowerCase() === currentEvent.toLowerCase()) {
                 targetColumnIndex = i;
                 break;
             }
         }
 
         if (targetColumnIndex === -1) {
-            return { statusCode: 200, body: JSON.stringify({ status: 'error', message: `Could not find a column for ${currentEvent} on ${todayString}.` }) };
+            return { statusCode: 200, body: JSON.stringify({ status: 'error', message: `Could not find a column for ${currentEvent} on ${saudiTime.toLocaleDateString()}.` }) };
         }
 
         // --- Find the student row ---
-        // We start searching from row 3 (index 2) onwards
+        // Start searching from row 3 (index 2) onwards
         let targetRowIndex = -1;
-        for(let i=2; i < rows.length; i++){
+        for(let i = 2; i < rows.length; i++){
             if(rows[i] && rows[i][0] === studentId){
                 targetRowIndex = i;
                 break;
@@ -110,7 +115,7 @@ exports.handler = async function (event) {
         const studentName = rows[targetRowIndex][1]; // Assuming name is in Column B
 
         // --- Update the correct cell ---
-        const valueToWrite = currentDate.getMinutes().toString();
+        const valueToWrite = saudiTime.getMinutes().toString();
         const cellA1Notation = toA1(targetColumnIndex) + (targetRowIndex + 1);
 
         await sheets.spreadsheets.values.update({
