@@ -100,6 +100,9 @@ exports.handler = async function (event) {
         return { statusCode: 200, body: JSON.stringify({ status: 'error', message: `Student '${studentName}' not found in Week1.` }) };
     }
 
+    // Get the student's EXCOR group from Column C (index 2)
+    const studentExcorGroup = rows[targetRowIndex][2] ? `EXCOR ${rows[targetRowIndex][2]}'s Group` : "Unknown Group";
+
     const currentStudentPoints = parseInt(rows[targetRowIndex][targetColumnIndex] || '0');
     let pointsChange = action === 'add' ? points : -points;
     const newStudentPoints = currentStudentPoints + pointsChange;
@@ -109,10 +112,20 @@ exports.handler = async function (event) {
 
     // --- 3. Log the transaction in the Points Sheet ---
     const pointsLogSheetName = 'Points';
-    const pointsLogData = [saudiTime.toLocaleString('en-US', { timeZone: 'Asia/Riyadh' }), studentName, excorName, pointsChange > 0 ? `+${pointsChange}` : pointsChange.toString(), reason];
+    const dateForLog = saudiTime.toLocaleDateString('en-US', { timeZone: 'Asia/Riyadh' });
+    // Add the student's EXCOR group to the log data array
+    const pointsLogData = [
+        dateForLog, 
+        studentName, 
+        excorName, 
+        pointsChange > 0 ? `+${pointsChange}` : pointsChange.toString(), 
+        reason,
+        studentExcorGroup // This will be logged to Column F
+    ];
+    
     await sheets.spreadsheets.values.append({ spreadsheetId, range: pointsLogSheetName, valueInputOption: 'USER_ENTERED', resource: { values: [pointsLogData] } });
     
-    // --- NEW: Updated Confirmation Message ---
+    // --- Updated Confirmation Message ---
     const actionVerb = action === 'add' ? 'Added' : 'Removed';
     const successMessage = `${actionVerb} ${points} points for ${studentName}!`;
 
