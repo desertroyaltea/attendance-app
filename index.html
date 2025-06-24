@@ -55,7 +55,7 @@
         /* Menu Page Styles */
         .menu-buttons { display: flex; flex-direction: column; gap: 15px; }
         #welcome-message { font-size: 1.1em; font-weight: 500; color: var(--subtle-text); margin-top: 5px; margin-bottom: 25px; }
-        #goto-cup { display: none; background-color: var(--gold); color: #333; } /* Hidden by default */
+        #goto-cup { display: none; background-color: var(--gold); color: #333; }
         #goto-cup:hover { background-color: #e6c300; }
 
         /* Scanner & Points Page Styles */
@@ -71,11 +71,11 @@
         .button.remove:hover { background-color: #c82333; }
         #excor-balance { font-weight: 600; color: var(--primary-color); margin-bottom: 20px; }
 
-        /* Leaderboard Styles */
+        /* Leaderboard & Transcript Styles */
         .ranking-type-selector { display: flex; justify-content: center; gap: 20px; margin-bottom: 20px; }
-        .ranking-type-selector label { font-weight: 500; cursor: pointer; }
-        #leaderboard-display { margin-top: 20px; text-align: left; }
-        .leaderboard-item { display: flex; align-items: center; padding: 10px; margin-bottom: 8px; background-color: #f9fafb; border-radius: 8px; border: 1px solid #eee; }
+        #leaderboard-display, #transcript-display { margin-top: 20px; text-align: left; }
+        .leaderboard-item, .transcript-item { padding: 12px; margin-bottom: 8px; background-color: #f9fafb; border-radius: 8px; border: 1px solid #eee; font-size: 0.95em; }
+        .leaderboard-item { display: flex; align-items: center; }
         .leaderboard-item .rank { font-size: 1.2em; font-weight: 700; color: var(--subtle-text); width: 40px; }
         .leaderboard-item .name { font-weight: 600; flex-grow: 1; }
         .leaderboard-item .points { font-size: 1.1em; font-weight: 700; color: var(--primary-color); }
@@ -96,7 +96,7 @@
 
     <!-- Menu Page -->
     <div id="menu-page" class="page container">
-        <div class="card"><div class="page-header"><img src="assets/logo.png" alt="SRSI Logo" class="logo"></div><p id="welcome-message"></p><div class="menu-buttons"><button id="goto-attendance" class="button">Attendance</button><button id="goto-points" class="button">EXCOR Points</button><button id="goto-cup" class="button">EXCOR Cup</button></div></div>
+        <div class="card"><div class="page-header"><img src="assets/logo.png" alt="SRSI Logo" class="logo"></div><p id="welcome-message"></p><div class="menu-buttons"><button id="goto-attendance" class="button">Attendance</button><button id="goto-points" class="button">EXCOR Points</button><button id="goto-transcript" class="button">Transcript</button><button id="goto-cup" class="button">EXCOR Cup</button></div></div>
          <footer><p class="credit">Made by: Abdulelah AlHarbi | SRSI23,24 EXCOR</p></footer>
     </div>
 
@@ -114,29 +114,14 @@
 
     <!-- EXCOR Cup Ranking Page -->
     <div id="cup-page" class="page container">
-        <div class="card">
-            <h2>EXCOR Cup Rankings</h2>
-            <div class="ranking-type-selector">
-                <label><input type="radio" name="rankingType" value="student" checked> Student</label>
-                <label><input type="radio" name="rankingType" value="group"> EXCOR Group</label>
-            </div>
-            <div class="form-group">
-                <label for="week-select">Select Week</label>
-                <select id="week-select">
-                    <option value="">-- Choose a week --</option>
-                    <option value="Week1">Week 1</option>
-                    <option value="Week2">Week 2</option>
-                    <option value="Week3">Week 3</option>
-                    <option value="Week4">Week 4</option>
-                    <option value="Week5">Week 5</option>
-                    <option value="Week6">Week 6</option>
-                    <option value="Total">Total</option>
-                </select>
-            </div>
-            <div id="leaderboard-display"></div>
-        </div>
-        <button class="button back-button">Back to Menu</button>
-        <footer><p class="credit">Made by: Abdulelah AlHarbi | SRSI23,24 EXCOR</p></footer>
+        <div class="card"><h2>EXCOR Cup Rankings</h2><div class="ranking-type-selector"><label><input type="radio" name="rankingType" value="student" checked> Student</label><label><input type="radio" name="rankingType" value="group"> EXCOR Group</label></div><div class="form-group"><label for="week-select">Select Week</label><select id="week-select"><option value="">-- Choose a week --</option><option value="Week1">Week 1</option><option value="Week2">Week 2</option><option value="Week3">Week 3</option><option value="Week4">Week 4</option><option value="Week5">Week 5</option><option value="Week6">Week 6</option><option value="Total">Total</option></select></div><div id="leaderboard-display"></div></div>
+        <button class="button back-button">Back to Menu</button><footer><p class="credit">Made by: Abdulelah AlHarbi | SRSI23,24 EXCOR</p></footer>
+    </div>
+
+    <!-- Transcript Page -->
+    <div id="transcript-page" class="page container">
+        <div class="card"><h2>Daily Points Transcript</h2><div class="form-group"><label for="transcript-date">Select Date</label><input type="date" id="transcript-date"></div><div id="transcript-display"></div></div>
+        <button class="button back-button">Back to Menu</button><footer><p class="credit">Made by: Abdulelah AlHarbi | SRSI23,24 EXCOR</p></footer>
     </div>
 
     <script src="https://unpkg.com/html5-qrcode"></script>
@@ -181,6 +166,16 @@
         document.getElementById('goto-points').addEventListener('click', () => { showPage('points-page'); fetchExcorBalance(); if (studentSelect.options.length <= 1) { populateStudents(); } });
         document.getElementById('goto-cup').addEventListener('click', () => { showPage('cup-page'); });
         
+        document.getElementById('goto-transcript').addEventListener('click', () => {
+            const dateInput = document.getElementById('transcript-date');
+            if (!dateInput.value) {
+                const today = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Riyadh' })).toISOString().split('T')[0];
+                dateInput.value = today;
+            }
+            fetchTranscript();
+            showPage('transcript-page');
+        });
+
         document.querySelectorAll('.back-button').forEach(button => {
             button.addEventListener('click', () => {
                 if (scanner) { try { scanner.clear(); } catch(e) {} scanner = null; }
@@ -188,25 +183,57 @@
             });
         });
 
+        // --- Transcript Logic ---
+        const transcriptDateInput = document.getElementById('transcript-date');
+        const transcriptDisplay = document.getElementById('transcript-display');
+
+        async function fetchTranscript() {
+            const selectedDate = transcriptDateInput.value;
+            if (!selectedDate) {
+                transcriptDisplay.innerHTML = '';
+                return;
+            }
+            transcriptDisplay.innerHTML = '<div class="loader"></div>';
+
+            try {
+                const response = await fetch('/.netlify/functions/get-transcript', {
+                    method: 'POST',
+                    body: JSON.stringify({ date: selectedDate })
+                });
+                if (!response.ok) throw new Error('Failed to fetch transcript');
+                const data = await response.json();
+                renderTranscript(data);
+            } catch (error) {
+                transcriptDisplay.innerHTML = '<p class="error">Could not load transcript.</p>';
+            }
+        }
+        transcriptDateInput.addEventListener('change', fetchTranscript);
+
+        function renderTranscript(data) {
+            transcriptDisplay.innerHTML = '';
+            if (data.length === 0) {
+                transcriptDisplay.innerHTML = '<p>No points transactions found for this date.</p>';
+                return;
+            }
+            data.forEach(entry => {
+                const item = document.createElement('div');
+                item.className = 'transcript-item';
+                item.textContent = entry;
+                transcriptDisplay.appendChild(item);
+            });
+        }
+
+        // --- Leaderboard Logic ---
         const weekSelect = document.getElementById('week-select');
         const leaderboardDisplay = document.getElementById('leaderboard-display');
         const rankingTypeRadios = document.querySelectorAll('input[name="rankingType"]');
-
         async function fetchRankings() {
             const selectedWeek = weekSelect.value;
             const selectedType = document.querySelector('input[name="rankingType"]:checked').value;
-            
-            if (!selectedWeek) {
-                leaderboardDisplay.innerHTML = '';
-                return;
-            }
+            if (!selectedWeek) { leaderboardDisplay.innerHTML = ''; return; }
             leaderboardDisplay.innerHTML = '<div class="loader"></div>';
-
             try {
-                const response = await fetch('/.netlify/functions/get-cup-ranking', {
-                    method: 'POST',
-                    body: JSON.stringify({ week: selectedWeek, type: selectedType })
-                });
+                const response = await fetch('/.netlify/functions/get-cup-ranking', { method: 'POST', body: JSON.stringify({ week: selectedWeek, type: selectedType }) });
                 if (!response.ok) throw new Error('Failed to fetch rankings');
                 const data = await response.json();
                 renderLeaderboard(data, selectedType);
@@ -214,10 +241,8 @@
                 leaderboardDisplay.innerHTML = '<p class="error">Could not load rankings.</p>';
             }
         }
-        
         weekSelect.addEventListener('change', fetchRankings);
         rankingTypeRadios.forEach(radio => radio.addEventListener('change', fetchRankings));
-
         function renderLeaderboard(data, type) {
             leaderboardDisplay.innerHTML = '';
             if (data.length === 0) {
@@ -228,29 +253,16 @@
                 const rank = index + 1;
                 const leaderboardItem = document.createElement('div');
                 leaderboardItem.className = `leaderboard-item rank-${rank}`;
-                leaderboardItem.innerHTML = `
-                    <div class="rank">#${rank}</div>
-                    <div class="name">${item.name}</div>
-                    <div class="points">${item.points} pts</div>
-                `;
+                leaderboardItem.innerHTML = `<div class="rank">#${rank}</div><div class="name">${item.name}</div><div class="points">${item.points} pts</div>`;
                 leaderboardDisplay.appendChild(leaderboardItem);
             });
         }
         
-        async function populateStudents() { /* ... unchanged ... */ }
-        async function fetchExcorBalance() { /* ... unchanged ... */ }
-        async function handlePoints(action) { /* ... unchanged ... */ }
-        function startScanner() { /* ... unchanged ... */ }
-
-        // --- Populate Students (unchanged) ---
         async function populateStudents() { try { const response = await fetch('/.netlify/functions/get-students'); if (!response.ok) throw new Error('Network response was not ok'); const students = await response.json(); studentSelect.innerHTML = ''; students.forEach(student => { const option = document.createElement('option'); option.value = student; option.textContent = student; studentSelect.appendChild(option); }); } catch (error) { studentSelect.innerHTML = '<option>Could not load students</option>'; } }
-        // --- Fetch EXCOR Balance (unchanged) ---
         async function fetchExcorBalance() { excorBalanceEl.textContent = 'Your Balance: Loading...'; if (!loggedInUser) { excorBalanceEl.textContent = 'Your Balance: Error - Not logged in.'; return; } try { const response = await fetch('/.netlify/functions/get-excor-balance', { method: 'POST', body: JSON.stringify({ excorName: loggedInUser }) }); if (!response.ok) { const errorText = await response.text(); throw new Error(`Failed to fetch balance. Server responded with: ${response.status} ${errorText}`); } const data = await response.json(); if (typeof data.balance !== 'undefined') { excorBalanceEl.textContent = `Your Balance: ${data.balance} Points`; } else { throw new Error('Balance not found in server response.'); } } catch (error) { console.error("fetchExcorBalance Error:", error); excorBalanceEl.textContent = 'Your Balance: Could not load.'; } }
-        // --- Handle Points (unchanged) ---
         async function handlePoints(action) { const studentName = studentSelect.value; const points = document.getElementById('points-input').value; const reason = document.getElementById('reason-input').value; const resultEl = document.getElementById('points-result'); if (!points || parseInt(points) <= 0) { resultEl.className = 'status-message error'; resultEl.textContent = 'Please enter a valid number of points.'; return; } if (!reason.trim()) { resultEl.className = 'status-message error'; resultEl.textContent = 'A reason is required.'; return; } resultEl.className = 'status-message info'; resultEl.textContent = `${action === 'add' ? 'Adding' : 'Removing'} points...`; try { const response = await fetch('/.netlify/functions/manage-points', { method: 'POST', body: JSON.stringify({ studentName, points: parseInt(points), action, reason, excorName: loggedInUser }) }); const data = await response.json(); resultEl.textContent = data.message; resultEl.className = `status-message ${data.status}`; if (data.status === 'success') { fetchExcorBalance(); } } catch (error) { resultEl.textContent = 'Error communicating with server.'; resultEl.className = 'status-message error'; } }
         document.getElementById('add-points').addEventListener('click', () => handlePoints('add'));
         document.getElementById('remove-points').addEventListener('click', () => handlePoints('remove'));
-        // --- Start Scanner (unchanged) ---
         function startScanner() { if (scanner) return; const resultDiv = document.getElementById('result'); let isProcessing = false; async function onScanSuccess(decodedText) { if (isProcessing) return; isProcessing = true; resultDiv.textContent = `Processing: ${decodedText}...`; resultDiv.className = 'info'; try { const response = await fetch('/.netlify/functions/log-attendance', { method: 'POST', body: JSON.stringify({ studentId: decodedText }) }); const data = await response.json(); resultDiv.textContent = data.message; resultDiv.className = `info ${data.status}`; } catch (error) { resultDiv.textContent = 'Error communicating with server.'; resultDiv.className = 'info error'; } setTimeout(() => { isProcessing = false; resultDiv.textContent = 'Ready for next scan...'; resultDiv.className = 'info'; }, 4000); } scanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: { width: 250, height: 250 } }, false); scanner.render(onScanSuccess, () => {}); }
 
     </script>
