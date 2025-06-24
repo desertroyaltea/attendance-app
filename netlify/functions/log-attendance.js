@@ -10,7 +10,6 @@ const eventSchedule = [
 // --------------------
 
 // Helper function to get the current event based on the time
-// It now accepts a date object to make it testable and timezone-aware
 function getCurrentEvent(date) {
     const currentHour = date.getHours();
     for (const event of eventSchedule) {
@@ -39,11 +38,7 @@ exports.handler = async function (event) {
     }
 
     try {
-        // --- TIMEZONE FIX ---
-        // Create a new Date object that represents the current time in Saudi Arabia (AST)
         const saudiTime = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Riyadh' }));
-        // --------------------
-
         const { studentId } = JSON.parse(event.body);
         const currentEvent = getCurrentEvent(saudiTime);
         
@@ -65,11 +60,11 @@ exports.handler = async function (event) {
 
         const sheets = google.sheets({ version: 'v4', auth });
         const spreadsheetId = process.env.GOOGLE_SHEET_ID;
-        const sheetName = 'Week1'; // Targeting the "Week1" sheet
+        const sheetName = 'Week1';
 
         const response = await sheets.spreadsheets.values.get({
             spreadsheetId,
-            range: `${sheetName}!A:AZ`, // Fetch a reasonable number of columns
+            range: `${sheetName}!A:AZ`,
         });
 
         const rows = response.data.values || [];
@@ -77,29 +72,27 @@ exports.handler = async function (event) {
              return { statusCode: 500, body: JSON.stringify({ status: 'error', message: 'Sheet has fewer than 2 rows. Cannot read headers.' }) };
         }
         
-        const dateHeaderRow = rows[0];
-        const eventHeaderRow = rows[1];
+        const eventHeaderRow = rows[0]; // Events are in Row 1
+        const dateHeaderRow = rows[1];  // Dates are in Row 2
+        
         const todayString = saudiTime.toLocaleDateString('en-US', { timeZone: 'Asia/Riyadh' });
         
-        // --- Find the correct column ---
         let targetColumnIndex = -1;
-        for (let i = 0; i < dateHeaderRow.length; i++) {
-            // Normalize dates from sheet for reliable comparison
+        for (let i = 0; i < eventHeaderRow.length; i++) {
+            const sheetEvent = eventHeaderRow[i] ? eventHeaderRow[i].trim().toLowerCase() : null;
+            const expectedEvent = currentEvent.toLowerCase();
             const headerDate = dateHeaderRow[i] ? new Date(dateHeaderRow[i]).toLocaleDateString('en-US') : null;
             
-            // Check if the date matches today AND the event matches the current event
-            if (headerDate === todayString && eventHeaderRow[i] && eventHeaderRow[i].toLowerCase() === currentEvent.toLowerCase()) {
+            if (sheetEvent === expectedEvent && headerDate === todayString) {
                 targetColumnIndex = i;
                 break;
             }
         }
 
         if (targetColumnIndex === -1) {
-            return { statusCode: 200, body: JSON.stringify({ status: 'error', message: `Could not find a column for ${currentEvent} on ${saudiTime.toLocaleDateString()}.` }) };
+            return { statusCode: 200, body: JSON.stringify({ status: 'error', message: `Could not find column for Event: '${currentEvent}' on Date: '${todayString}'.` }) };
         }
 
-        // --- Find the student row ---
-        // Start searching from row 3 (index 2) onwards
         let targetRowIndex = -1;
         for(let i = 2; i < rows.length; i++){
             if(rows[i] && rows[i][0] === studentId){
@@ -112,9 +105,16 @@ exports.handler = async function (event) {
             return { statusCode: 200, body: JSON.stringify({ status: 'error', message: `Student ID ${studentId} not found in the sheet.` }) };
         }
         
-        const studentName = rows[targetRowIndex][1]; // Assuming name is in Column B
+        const studentName = rows[targetRowIndex][1];
 
-        // --- Update the correct cell ---
+        // --- ROBUST CHECK FOR EXISTING VALUE ---
+        // This safely checks if the cell exists and has a non-empty value.
+        const existingValue = (rows[targetRowIndex] && rows[targetRowIndex][targetColumnIndex]) ? rows[targetRowIndex][targetColumnIndex] : null;
+        if (existingValue && existingValue.trim() !== "") {
+            return { statusCode: 200, body: JSON.stringify({ status: 'error', message: `${studentName} has already been checked in for ${currentEvent}!` }) };
+        }
+        // ------------------------------------------
+
         const valueToWrite = saudiTime.getMinutes().toString();
         const cellA1Notation = toA1(targetColumnIndex) + (targetRowIndex + 1);
 
