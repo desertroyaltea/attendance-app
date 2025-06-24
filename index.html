@@ -15,7 +15,7 @@
             --text-color: #333;
             --heading-color: #1a253c;
             --subtle-text: #888;
-            --primary-color: #2c5282; /* Deep Slate Blue */
+            --primary-color: #2c5282;
             --primary-hover: #2a4365;
             --success-bg: #e6f7f2;
             --success-text: #28a745;
@@ -24,245 +24,213 @@
             --shadow: 0 7px 25px rgba(0, 0, 0, 0.08);
             --border-radius: 12px;
         }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        body { font-family: var(--primary-font); background-color: var(--bg-color); color: var(--text-color); margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; box-sizing: border-box; }
+        .container { max-width: 450px; width: 100%; text-align: center; }
+        .page { display: none; animation: fadeIn 0.5s ease-out; } /* All pages are hidden by default */
+        .page.active { display: block; }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        body {
-            font-family: var(--primary-font);
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            margin: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            padding: 20px;
-            box-sizing: border-box;
-        }
-
-        .container {
-            max-width: 450px;
-            width: 100%;
-            text-align: center;
-        }
-        
-        /* --- Login Page Styles --- */
-        .login-form {
-            background: var(--card-bg);
-            padding: 40px 35px;
-            border-radius: var(--border-radius);
-            box-shadow: var(--shadow);
-            animation: fadeIn 0.5s ease-out;
-        }
-
-        .login-form .form-header {
-            display: flex;
-            flex-direction: column; /* Stack logo and title vertically */
-            align-items: center;
-            justify-content: center;
-            gap: 10px; /* Space between logo and title */
-            margin-bottom: 30px;
-        }
-
-        .scanner-header {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 15px; /* Adjust spacing */
-        }
-        
-        .logo {
-            width: 180px;
-            height: 180px;
-        }
-        
-        .login-form h1 {
-            margin: 0;
-            font-size: 1.8em;
-            color: var(--heading-color);
-            font-weight: 700;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-            text-align: left;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-            font-size: 0.9em;
-        }
-
-        .form-group select,
-        .form-group input {
-            width: 100%;
-            padding: 14px;
-            border-radius: 8px;
-            border: 1px solid #ddd;
-            background-color: #f9fafb;
-            box-sizing: border-box;
-            font-size: 1em;
-            transition: border-color 0.2s, box-shadow 0.2s;
-        }
-        
-        .form-group select:focus,
-        .form-group input:focus {
-            outline: none;
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 3px rgba(44, 82, 130, 0.1);
-        }
-
-        .login-button {
-            width: 100%;
-            padding: 15px;
-            border: none;
-            border-radius: 8px;
-            background-color: var(--primary-color);
-            color: white;
-            font-size: 1.1em;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease-in-out;
-        }
-        
-        .login-button:hover {
-            background-color: var(--primary-hover);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-        }
-
-        #login-error {
-            color: var(--error-text);
-            margin-top: 15px;
-            height: 20px;
-            font-weight: 500;
-        }
-
-        /* --- Scanner Page Styles --- */
-        #scanner-page {
-            display: none; /* Hidden by default */
-            animation: fadeIn 0.5s ease-out;
-        }
-        
-        /* This style is no longer needed as the title is removed */
-        /* header #scanner-title { ... } */
-        
-        #welcome-message {
-            font-size: 1.1em;
-            font-weight: 500;
-            color: var(--subtle-text);
-            margin-top: 5px;
-            margin-bottom: 25px;
-        }
-
-        #reader {
-            background-color: var(--card-bg);
-            border-radius: var(--border-radius);
-            box-shadow: var(--shadow);
-            overflow: hidden;
-            border: 1px solid #eee;
-        }
-        
-        #result {
-            font-size: 1.2em;
-            font-weight: 500;
-            padding: 20px;
-            border-radius: var(--border-radius);
-            transition: all 0.3s ease-in-out;
-            min-height: 30px;
-            line-height: 1.5;
-            margin-bottom: 25px;
-        }
-
-        .info { background-color: #f0f2f5; color: var(--text-color); }
-        .success { background-color: var(--success-bg); color: var(--success-text); transform: scale(1.03); box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
-        .error { background-color: var(--error-bg); color: var(--error-text); transform: scale(1.03); box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
-
+        /* Shared Styles */
+        .card { background: var(--card-bg); padding: 40px 35px; border-radius: var(--border-radius); box-shadow: var(--shadow); }
+        .form-header, .page-header { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; margin-bottom: 30px; }
+        .logo { width: 180px; height: 180px; }
+        h1 { margin: 0; font-size: 1.8em; color: var(--heading-color); font-weight: 700; }
+        .form-group { margin-bottom: 20px; text-align: left; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: 600; font-size: 0.9em; }
+        select, input { width: 100%; padding: 14px; border-radius: 8px; border: 1px solid #ddd; background-color: #f9fafb; box-sizing: border-box; font-size: 1em; transition: border-color 0.2s, box-shadow 0.2s; }
+        select:focus, input:focus { outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 3px rgba(44, 82, 130, 0.1); }
+        .button { width: 100%; padding: 15px; border: none; border-radius: 8px; background-color: var(--primary-color); color: white; font-size: 1.1em; font-weight: 600; cursor: pointer; transition: all 0.2s ease-in-out; }
+        .button:hover { background-color: var(--primary-hover); transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .status-message { color: var(--error-text); margin-top: 15px; height: 20px; font-weight: 500; }
         footer { margin-top: 30px; font-size: 0.9em; color: var(--subtle-text); }
         .credit { font-size: 0.8em; margin-top: 5px; }
+
+        /* Menu Page Styles */
+        .menu-buttons { display: flex; flex-direction: column; gap: 15px; }
+        #welcome-message { font-size: 1.1em; font-weight: 500; color: var(--subtle-text); margin-top: 5px; margin-bottom: 25px; }
+        
+        /* Scanner & Points Page Styles */
+        #reader { background-color: var(--card-bg); border-radius: var(--border-radius); box-shadow: var(--shadow); overflow: hidden; border: 1px solid #eee; }
+        #result, #points-result { font-size: 1.2em; font-weight: 500; padding: 20px; border-radius: var(--border-radius); transition: all 0.3s ease-in-out; min-height: 30px; line-height: 1.5; margin-bottom: 25px; }
+        .info { background-color: #f0f2f5; color: var(--text-color); }
+        .success { background-color: var(--success-bg); color: var(--success-text); transform: scale(1.03); }
+        .error { background-color: var(--error-bg); color: var(--error-text); transform: scale(1.03); }
+        .button-group { display: flex; gap: 10px; }
+        .button.add { background-color: #28a745; }
+        .button.add:hover { background-color: #218838; }
+        .button.remove { background-color: #dc3545; }
+        .button.remove:hover { background-color: #c82333; }
+        .back-button { margin-top: 20px; background-color: #6c757d; }
+        .back-button:hover { background-color: #5a6268; }
+
     </style>
 </head>
 <body>
-    <!-- Login Page Container -->
-    <div id="login-page" class="container">
-        <form id="login-form" class="login-form">
+    <!-- Login Page -->
+    <div id="login-page" class="page active container">
+        <div class="card">
             <div class="form-header">
-                <!-- Switched to local logo file -->
                 <img src="assets/logo.png" alt="SRSI Logo" class="logo">
                 <h1>The EXCOR System</h1>
             </div>
-            <div class="form-group">
-                <label for="username">Username</label>
-                <select id="username" name="username">
-                    <option value="Umairah">Umairah 🇲🇾</option>
-                    <option value="Wasan">Wasan</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label for="password">Password</label>
-                <input type="password" id="password" name="password" required>
-            </div>
-            <button type="submit" class="login-button">Login</button>
-            <p id="login-error"></p>
-        </form>
-        <footer>
-             <p class="credit">Made by: Abdulelah AlHarbi | SRSI23,24 EXCOR</p>
-        </footer>
+            <form id="login-form">
+                <div class="form-group"><label for="username">Username</label><select id="username" name="username"><option value="Umairah">Umairah 🇲🇾</option><option value="Wasan">Wasan</option></select></div>
+                <div class="form-group"><label for="password">Password</label><input type="password" id="password" name="password" required></div>
+                <button type="submit" class="button">Login</button>
+                <p id="login-error" class="status-message"></p>
+            </form>
+        </div>
+        <footer><p class="credit">Made by: Abdulelah AlHarbi | SRSI23,24 EXCOR</p></footer>
     </div>
 
-    <!-- Scanner Page Container -->
-    <main id="scanner-page" class="container">
-        <header>
-            <div class="scanner-header">
-                <!-- Switched to local logo file, removed title -->
-                <img src="assets/logo.png" alt="SRSI Logo" class="logo">
-            </div>
+    <!-- Menu Page -->
+    <div id="menu-page" class="page container">
+        <div class="card">
+            <div class="page-header"><img src="assets/logo.png" alt="SRSI Logo" class="logo"></div>
             <p id="welcome-message"></p>
-        </header>
+            <div class="menu-buttons">
+                <button id="goto-attendance" class="button">Attendance</button>
+                <button id="goto-points" class="button">EXCOR Points</button>
+            </div>
+        </div>
+         <footer><p class="credit">Made by: Abdulelah AlHarbi | SRSI23,24 EXCOR</p></footer>
+    </div>
+
+    <!-- Scanner Page -->
+    <div id="scanner-page" class="page container">
         <section id="result" class="info">Ready to scan...</section>
         <section id="reader"></section>
-        <footer>
-            <p>A.G.A Attendance System</p>
-            <p class="credit">Made by: Abdulelah AlHarbi | SRSI23,24 EXCOR</p>
-        </footer>
-    </main>
+        <button class="button back-button">Back to Menu</button>
+        <footer><p>The EXCOR System</p><p class="credit">Made by: Abdulelah AlHarbi | SRSI23,24 EXCOR</p></footer>
+    </div>
+
+    <!-- Points Page -->
+    <div id="points-page" class="page container">
+        <div class="card">
+            <h2>EXCOR Points</h2>
+            <div class="form-group"><label for="student-select">Select Student</label><select id="student-select" name="student-select"><option>Loading students...</option></select></div>
+            <div class="form-group"><label for="points-input">Points</label><input type="number" id="points-input" placeholder="e.g., 5" required></div>
+            <div class="form-group"><label for="reason-input">Reason</label><input type="text" id="reason-input" placeholder="e.g., Being an idiot" required></div>
+            <div class="button-group">
+                <button id="add-points" class="button add">Add +</button>
+                <button id="remove-points" class="button remove">Remove -</button>
+            </div>
+             <p id="points-result" class="status-message"></p>
+        </div>
+        <button class="button back-button">Back to Menu</button>
+        <footer><p class="credit">Made by: Abdulelah AlHarbi | SRSI23,24 EXCOR</p></footer>
+    </div>
 
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script>
-        // --- LOGIN LOGIC ---
+        const pages = document.querySelectorAll('.page');
         const loginForm = document.getElementById('login-form');
-        const loginPage = document.getElementById('login-page');
-        const scannerPage = document.getElementById('scanner-page');
-        const loginError = document.getElementById('login-error');
         const welcomeMessage = document.getElementById('welcome-message');
+        const studentSelect = document.getElementById('student-select');
 
-        const credentials = {
-            "Umairah": "1212",
-            "Wasan": "2121"
-        };
+        const credentials = { "Umairah": "1212", "Wasan": "2121" };
+        let scanner = null;
+        let loggedInUser = null; // Variable to store the logged-in user's name
+
+        function showPage(pageId) {
+            pages.forEach(page => page.classList.remove('active'));
+            document.getElementById(pageId).classList.add('active');
+        }
+
+        async function populateStudents() {
+            try {
+                const response = await fetch('/.netlify/functions/get-students');
+                if (!response.ok) throw new Error('Network response was not ok');
+                const students = await response.json();
+                studentSelect.innerHTML = ''; 
+                students.forEach(student => {
+                    const option = document.createElement('option');
+                    option.value = student;
+                    option.textContent = student;
+                    studentSelect.appendChild(option);
+                });
+            } catch (error) {
+                studentSelect.innerHTML = '<option>Could not load students</option>';
+                console.error('Error fetching students:', error);
+            }
+        }
 
         loginForm.addEventListener('submit', function(event) {
-            event.preventDefault(); 
+            event.preventDefault();
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
+            const errorEl = document.getElementById('login-error');
 
             if (credentials[username] && credentials[username] === password) {
+                loggedInUser = username; // Store the username
                 welcomeMessage.textContent = `Welcome EXCOR ${username}!`;
-                loginPage.style.display = 'none';
-                scannerPage.style.display = 'block';
-                startScanner();
+                showPage('menu-page');
             } else {
-                loginError.textContent = 'Invalid username or password.';
+                errorEl.textContent = 'Invalid username or password.';
             }
         });
 
-        // --- SCANNER LOGIC ---
+        document.getElementById('goto-attendance').addEventListener('click', () => {
+            showPage('scanner-page');
+            startScanner();
+        });
+
+        document.getElementById('goto-points').addEventListener('click', () => {
+            showPage('points-page');
+            if (studentSelect.options.length <= 1) {
+                populateStudents();
+            }
+        });
+
+        document.querySelectorAll('.back-button').forEach(button => {
+            button.addEventListener('click', () => {
+                if (scanner) {
+                    try { scanner.clear(); } catch(e) { console.error("Scanner clear failed", e); }
+                    scanner = null;
+                }
+                showPage('menu-page');
+            });
+        });
+        
+        async function handlePoints(action) {
+            const studentName = studentSelect.value;
+            const points = document.getElementById('points-input').value;
+            const reason = document.getElementById('reason-input').value; // Get the reason
+            const resultEl = document.getElementById('points-result');
+
+            if (!points || parseInt(points) <= 0) {
+                resultEl.className = 'status-message error';
+                resultEl.textContent = 'Please enter a valid number of points.';
+                return;
+            }
+            if (!reason.trim()) {
+                resultEl.className = 'status-message error';
+                resultEl.textContent = 'A reason is required.';
+                return;
+            }
+            
+            resultEl.className = 'status-message info';
+            resultEl.textContent = `${action === 'add' ? 'Adding' : 'Removing'} points...`;
+
+            try {
+                const response = await fetch('/.netlify/functions/manage-points', {
+                    method: 'POST',
+                    body: JSON.stringify({ studentName, points: parseInt(points), action, reason, excorName: loggedInUser }) // Send all data
+                });
+                const data = await response.json();
+                resultEl.textContent = data.message;
+                resultEl.className = `status-message ${data.status}`;
+            } catch (error) {
+                 resultEl.textContent = 'Error communicating with server.';
+                 resultEl.className = 'status-message error';
+            }
+        }
+
+        document.getElementById('add-points').addEventListener('click', () => handlePoints('add'));
+        document.getElementById('remove-points').addEventListener('click', () => handlePoints('remove'));
+        
         function startScanner() {
+            if (scanner) return;
             const resultDiv = document.getElementById('result');
             let isProcessing = false;
 
@@ -271,7 +239,6 @@
                 isProcessing = true;
                 resultDiv.textContent = `Processing: ${decodedText}...`;
                 resultDiv.className = 'info';
-
                 try {
                     const response = await fetch('/.netlify/functions/log-attendance', {
                         method: 'POST',
@@ -279,23 +246,15 @@
                     });
                     const data = await response.json();
                     resultDiv.textContent = data.message;
-                    resultDiv.className = data.status;
+                    resultDiv.className = `info ${data.status}`;
                 } catch (error) {
                     resultDiv.textContent = 'Error communicating with server.';
-                    resultDiv.className = 'error';
+                    resultDiv.className = 'info error';
                 }
-
-                setTimeout(() => { 
-                    isProcessing = false; 
-                    resultDiv.textContent = 'Ready for next scan...';
-                    resultDiv.className = 'info';
-                }, 4000);
+                setTimeout(() => { isProcessing = false; resultDiv.textContent = 'Ready for next scan...'; resultDiv.className = 'info'; }, 4000);
             }
-
-            function onScanError(errorMessage) {}
-
-            const html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: { width: 250, height: 250 } }, false);
-            html5QrcodeScanner.render(onScanSuccess, onScanError);
+            scanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: { width: 250, height: 250 } }, false);
+            scanner.render(onScanSuccess, () => {});
         }
     </script>
 </body>
