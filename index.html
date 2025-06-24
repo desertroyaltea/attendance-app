@@ -1,19 +1,106 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Attendance Scanner</title>
     <style>
-        body { font-family: Arial, sans-serif; display: flex; flex-direction: column; align-items: center; padding-top: 20px; }
-        #reader { width: 500px; max-width: 90%; border-radius: 8px; }
-        #result { margin-top: 20px; padding: 10px; font-size: 1.2em; text-align: center; }
-        .success { background-color: #d4edda; }
-        .error { background-color: #f8d7da; }
+        :root {
+            --primary-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+            --bg-color: #f4f7f9;
+            --card-bg: #ffffff;
+            --text-color: #2c3e50;
+            --success-bg: #e4f8f0;
+            --success-text: #28a745;
+            --error-bg: #fbe9e9;
+            --error-text: #dc3545;
+            --neutral-bg: #e9ecef;
+            --neutral-text: #495057;
+            --shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+            --border-radius: 12px;
+        }
+
+        body {
+            font-family: var(--primary-font);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .container {
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 2.5em;
+            font-weight: 700;
+            margin-bottom: 30px;
+        }
+
+        #reader {
+            background-color: var(--card-bg);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            overflow: hidden; /* Keeps the camera feed inside the rounded corners */
+            margin-bottom: 30px;
+        }
+        
+        #result {
+            font-size: 1.2em;
+            font-weight: 500;
+            padding: 20px;
+            border-radius: var(--border-radius);
+            transition: all 0.3s ease-in-out;
+            min-height: 30px;
+            line-height: 1.5;
+        }
+
+        .info {
+            background-color: var(--neutral-bg);
+            color: var(--neutral-text);
+        }
+
+        .success {
+            background-color: var(--success-bg);
+            color: var(--success-text);
+            transform: scale(1.05);
+        }
+
+        .error {
+            background-color: var(--error-bg);
+            color: var(--error-text);
+            transform: scale(1.05);
+        }
+
+        footer {
+            margin-top: 40px;
+            font-size: 0.9em;
+            color: #aaa;
+        }
+
     </style>
 </head>
 <body>
-    <h1>Attendance Scanner</h1>
-    <div id="reader"></div>
-    <div id="result"></div>
+    <main class="container">
+        <header>
+            <h1>SRSI Attendance</h1>
+        </header>
+
+        <section id="reader"></section>
+        <section id="result" class="info">Ready to scan...</section>
+
+        <footer>
+            <p>Made by: Abdulelah AlHarbi | SRSI23,24 EXCOR</p>
+        </footer>
+    </main>
 
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script>
@@ -23,7 +110,9 @@
         async function onScanSuccess(decodedText) {
             if (isProcessing) return;
             isProcessing = true;
+
             resultDiv.textContent = `Processing: ${decodedText}...`;
+            resultDiv.className = 'info';
 
             try {
                 const response = await fetch('/.netlify/functions/log-attendance', {
@@ -40,11 +129,20 @@
                 resultDiv.className = 'error';
             }
 
-            setTimeout(() => { isProcessing = false; }, 3000);
+            setTimeout(() => { 
+                isProcessing = false; 
+                resultDiv.textContent = 'Ready for next scan...';
+                resultDiv.className = 'info';
+            }, 4000); // Increased delay to read the message
+        }
+
+        function onScanError(errorMessage) {
+            // This function is called when the scanner fails to start or has other errors.
+            // We can ignore it for now to keep the UI clean.
         }
 
         const html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 });
-        html5QrcodeScanner.render(onScanSuccess);
+        html5QrcodeScanner.render(onScanSuccess, onScanError);
     </script>
 </body>
 </html>
