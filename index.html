@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SRSI Attendance System</title>
+    <title>The EXCOR System</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -58,18 +58,25 @@
             animation: fadeIn 0.5s ease-out;
         }
 
-        .login-form .form-header, .scanner-header {
+        .login-form .form-header {
+            display: flex;
+            flex-direction: column; /* Stack logo and title vertically */
+            align-items: center;
+            justify-content: center;
+            gap: 10px; /* Space between logo and title */
+            margin-bottom: 30px;
+        }
+
+        .scanner-header {
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 15px;
-            margin-bottom: 30px;
+            margin-bottom: 15px; /* Adjust spacing */
         }
         
-        .icon {
-            width: 40px;
-            height: 40px;
-            color: var(--primary-color);
+        .logo {
+            width: 180px;
+            height: 180px;
         }
         
         .login-form h1 {
@@ -142,12 +149,8 @@
             animation: fadeIn 0.5s ease-out;
         }
         
-        header #scanner-title {
-            font-size: 2.2em;
-            font-weight: 700;
-            color: var(--heading-color);
-            margin: 0;
-        }
+        /* This style is no longer needed as the title is removed */
+        /* header #scanner-title { ... } */
         
         #welcome-message {
             font-size: 1.1em;
@@ -189,13 +192,14 @@
     <div id="login-page" class="container">
         <form id="login-form" class="login-form">
             <div class="form-header">
-                <svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M15 3h6v6h-2V5h-4V3zM9 3v2H5v4H3V3h6zm6 18v-2h4v-4h2v6h-6zm-6 0H3v-6h2v4h4v2zM3 11h18v2H3v-2z"/></svg>
-                <h1>SRSI Attendance</h1>
+                <!-- Switched to local logo file -->
+                <img src="assets/logo.png" alt="SRSI Logo" class="logo">
+                <h1>The EXCOR System</h1>
             </div>
             <div class="form-group">
                 <label for="username">Username</label>
                 <select id="username" name="username">
-                    <option value="Abdulelah">Abdulelah</option>
+                    <option value="Umairah">Umairah 🇲🇾</option>
                     <option value="Wasan">Wasan</option>
                 </select>
             </div>
@@ -215,8 +219,8 @@
     <main id="scanner-page" class="container">
         <header>
             <div class="scanner-header">
-                <svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M15 3h6v6h-2V5h-4V3zM9 3v2H5v4H3V3h6zm6 18v-2h4v-4h2v6h-6zm-6 0H3v-6h2v4h4v2zM3 11h18v2H3v-2z"/></svg>
-                <h1 id="scanner-title">SRSI Attendance</h1>
+                <!-- Switched to local logo file, removed title -->
+                <img src="assets/logo.png" alt="SRSI Logo" class="logo">
             </div>
             <p id="welcome-message"></p>
         </header>
@@ -238,7 +242,7 @@
         const welcomeMessage = document.getElementById('welcome-message');
 
         const credentials = {
-            "Abdulelah": "1212",
+            "Umairah": "1212",
             "Wasan": "2121"
         };
 
