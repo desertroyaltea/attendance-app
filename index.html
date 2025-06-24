@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Attendance Scanner</title>
+    <title>Attendance System</title>
     <style>
         :root {
             --primary-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
@@ -18,6 +18,7 @@
             --neutral-text: #495057;
             --shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
             --border-radius: 12px;
+            --primary-color: #007bff;
         }
 
         body {
@@ -38,10 +39,80 @@
             width: 100%;
             text-align: center;
         }
+        
+        /* --- Login Page Styles --- */
+        .login-form {
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+        }
 
+        .login-form h1 {
+            margin-top: 0;
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .form-group select,
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+            font-size: 1em;
+        }
+
+        .login-button {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 8px;
+            background-color: var(--primary-color);
+            color: white;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .login-button:hover {
+            background-color: #0056b3;
+        }
+
+        #login-error {
+            color: var(--error-text);
+            margin-top: 15px;
+            height: 20px;
+        }
+
+        /* --- Scanner Page Styles --- */
+        #scanner-page {
+            display: none; /* Hidden by default */
+        }
+        
         header h1 {
             font-size: 2.5em;
             font-weight: 700;
+            margin-bottom: 10px; /* Reduced margin */
+        }
+        
+        #welcome-message {
+            font-size: 1.1em;
+            font-weight: 500;
+            color: var(--neutral-text);
+            margin-top: 0;
             margin-bottom: 30px;
         }
 
@@ -49,7 +120,7 @@
             background-color: var(--card-bg);
             border-radius: var(--border-radius);
             box-shadow: var(--shadow);
-            overflow: hidden; /* Keeps the camera feed inside the rounded corners */
+            overflow: hidden;
             margin-bottom: 30px;
         }
         
@@ -63,86 +134,123 @@
             line-height: 1.5;
         }
 
-        .info {
-            background-color: var(--neutral-bg);
-            color: var(--neutral-text);
-        }
+        .info { background-color: var(--neutral-bg); color: var(--neutral-text); }
+        .success { background-color: var(--success-bg); color: var(--success-text); transform: scale(1.05); }
+        .error { background-color: var(--error-bg); color: var(--error-text); transform: scale(1.05); }
 
-        .success {
-            background-color: var(--success-bg);
-            color: var(--success-text);
-            transform: scale(1.05);
-        }
-
-        .error {
-            background-color: var(--error-bg);
-            color: var(--error-text);
-            transform: scale(1.05);
-        }
-
-        footer {
-            margin-top: 40px;
-            font-size: 0.9em;
-            color: #aaa;
-        }
-
+        footer { margin-top: 40px; font-size: 0.9em; color: #aaa; }
     </style>
 </head>
 <body>
-    <main class="container">
-        <header>
-            <h1>SRSI Attendance</h1>
-        </header>
+    <!-- Login Page Container -->
+    <div id="login-page" class="container">
+        <form id="login-form" class="login-form">
+            <h1>System Login</h1>
+            <div class="form-group">
+                <label for="username">Username</label>
+                <select id="username" name="username">
+                    <option value="Abdulelah">Abdulelah</option>
+                    <option value="Wasan">Wasan</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+            <button type="submit" class="login-button">Login</button>
+            <p id="login-error"></p>
+        </form>
+    </div>
 
+    <!-- Scanner Page Container -->
+    <main id="scanner-page" class="container">
+        <header>
+            <h1>Attendance Scanner</h1>
+            <p id="welcome-message"></p>
+        </header>
         <section id="reader"></section>
         <section id="result" class="info">Ready to scan...</section>
-
         <footer>
-            <p>Made by: Abdulelah AlHarbi | SRSI23,24 EXCOR</p>
+            <p>QR Code Attendance System</p>
         </footer>
     </main>
 
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script>
-        const resultDiv = document.getElementById('result');
-        let isProcessing = false;
+        // --- LOGIN LOGIC ---
+        const loginForm = document.getElementById('login-form');
+        const loginPage = document.getElementById('login-page');
+        const scannerPage = document.getElementById('scanner-page');
+        const loginError = document.getElementById('login-error');
+        const welcomeMessage = document.getElementById('welcome-message');
 
-        async function onScanSuccess(decodedText) {
-            if (isProcessing) return;
-            isProcessing = true;
+        // Store credentials securely in code
+        const credentials = {
+            "Abdulelah": "1212",
+            "Wasan": "2121"
+        };
 
-            resultDiv.textContent = `Processing: ${decodedText}...`;
-            resultDiv.className = 'info';
+        loginForm.addEventListener('submit', function(event) {
+            event.preventDefault(); // Prevent form from reloading the page
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
 
-            try {
-                const response = await fetch('/.netlify/functions/log-attendance', {
-                    method: 'POST',
-                    body: JSON.stringify({ studentId: decodedText })
-                });
+            if (credentials[username] && credentials[username] === password) {
+                // Correct credentials
+                welcomeMessage.textContent = `Welcome EXCOR ${username}!`; // Set the welcome message
+                loginPage.style.display = 'none';
+                scannerPage.style.display = 'block';
+                startScanner(); // Initialize the scanner only after successful login
+            } else {
+                // Incorrect credentials
+                loginError.textContent = 'Invalid username or password.';
+            }
+        });
 
-                const data = await response.json();
-                resultDiv.textContent = data.message;
-                resultDiv.className = data.status;
 
-            } catch (error) {
-                resultDiv.textContent = 'Error communicating with server.';
-                resultDiv.className = 'error';
+        // --- SCANNER LOGIC ---
+        // This function will now be called only after a successful login
+        function startScanner() {
+            const resultDiv = document.getElementById('result');
+            let isProcessing = false;
+
+            async function onScanSuccess(decodedText) {
+                if (isProcessing) return;
+                isProcessing = true;
+
+                resultDiv.textContent = `Processing: ${decodedText}...`;
+                resultDiv.className = 'info';
+
+                try {
+                    const response = await fetch('/.netlify/functions/log-attendance', {
+                        method: 'POST',
+                        body: JSON.stringify({ studentId: decodedText })
+                    });
+
+                    const data = await response.json();
+                    resultDiv.textContent = data.message;
+                    resultDiv.className = data.status;
+
+                } catch (error) {
+                    resultDiv.textContent = 'Error communicating with server.';
+                    resultDiv.className = 'error';
+                }
+
+                setTimeout(() => { 
+                    isProcessing = false; 
+                    resultDiv.textContent = 'Ready for next scan...';
+                    resultDiv.className = 'info';
+                }, 4000);
             }
 
-            setTimeout(() => { 
-                isProcessing = false; 
-                resultDiv.textContent = 'Ready for next scan...';
-                resultDiv.className = 'info';
-            }, 4000); // Increased delay to read the message
-        }
+            function onScanError(errorMessage) {
+                // This function can be used for logging scanner errors if needed.
+            }
 
-        function onScanError(errorMessage) {
-            // This function is called when the scanner fails to start or has other errors.
-            // We can ignore it for now to keep the UI clean.
+            const html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 });
+            html5QrcodeScanner.render(onScanSuccess, onScanError);
         }
-
-        const html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 });
-        html5QrcodeScanner.render(onScanSuccess, onScanError);
     </script>
 </body>
 </html>
