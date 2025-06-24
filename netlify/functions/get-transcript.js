@@ -48,9 +48,14 @@ exports.handler = async function (event) {
                 // De-structure the row to get all the needed values
                 const [ , , excorName, points, reason, studentExcorGroup] = row;
                 
-                // Format the entry exactly as requested
-                const entryText = `EXCOR ${excorName || 'N/A'} gave ${studentExcorGroup || 'N/A'} ${points || 'N/A'} points for: ${reason || 'N/A'}`;
-                transcriptEntries.push(entryText);
+                // --- NEW: Return a structured object instead of a string ---
+                const entryData = {
+                    excorName: excorName || 'N/A',
+                    studentExcorGroup: studentExcorGroup || 'N/A',
+                    points: points || 'N/A',
+                    reason: reason || 'N/A'
+                };
+                transcriptEntries.push(entryData);
             }
         }
 

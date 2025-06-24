@@ -74,14 +74,18 @@
         /* Leaderboard & Transcript Styles */
         .ranking-type-selector { display: flex; justify-content: center; gap: 20px; margin-bottom: 20px; }
         #leaderboard-display, #transcript-display { margin-top: 20px; text-align: left; }
-        .leaderboard-item, .transcript-item { padding: 12px; margin-bottom: 8px; background-color: #f9fafb; border-radius: 8px; border: 1px solid #eee; font-size: 0.95em; }
-        .leaderboard-item { display: flex; align-items: center; }
+        .leaderboard-item { display: flex; align-items: center; padding: 12px; margin-bottom: 8px; background-color: #f9fafb; border-radius: 8px; border: 1px solid #eee; font-size: 0.95em; }
         .leaderboard-item .rank { font-size: 1.2em; font-weight: 700; color: var(--subtle-text); width: 40px; }
         .leaderboard-item .name { font-weight: 600; flex-grow: 1; }
         .leaderboard-item .points { font-size: 1.1em; font-weight: 700; color: var(--primary-color); }
         .leaderboard-item.rank-1 .rank { color: var(--gold); }
         .leaderboard-item.rank-2 .rank { color: var(--silver); }
         .leaderboard-item.rank-3 .rank { color: var(--bronze); }
+        .transcript-item { padding: 12px; margin-bottom: 8px; background-color: #f9fafb; border-radius: 8px; border: 1px solid #eee; font-size: 0.95em; line-height: 1.6; }
+        .t-excor { color: var(--primary-color); font-weight: 600; }
+        .t-group { color: #dd6b20; font-weight: 600; } /* Orange for group */
+        .t-reason { color: #38a169; } /* Green for reason */
+        .t-points { font-weight: 700; }
         .loader { border: 4px solid #f3f3f3; border-top: 4px solid var(--primary-color); border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 20px auto; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
@@ -218,7 +222,13 @@
             data.forEach(entry => {
                 const item = document.createElement('div');
                 item.className = 'transcript-item';
-                item.textContent = entry;
+                // Use the new structured data to build the formatted log entry
+                item.innerHTML = `
+                    <span class="t-excor">EXCOR ${entry.excorName}</span> gave 
+                    <span class="t-group">${entry.studentExcorGroup}</span> 
+                    <b class="t-points">${entry.points} points</b> for: 
+                    <span class="t-reason">"${entry.reason}"</span>
+                `;
                 transcriptDisplay.appendChild(item);
             });
         }
