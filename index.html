@@ -108,13 +108,16 @@
 
     <!-- Scanner Page (for EXCORs) -->
     <div id="scanner-page" class="page container">
-        <section id="excor-result" class="result-box info">Ready to scan...</section>
-        <section id="excor-reader" class="reader-container"></section>
+        <div class="card">
+            <h2 style="margin-bottom: 20px;">Attendance Scanner</h2>
+            <section id="excor-result" class="result-box info">Ready to scan...</section>
+            <section id="excor-reader" class="reader-container"></section>
+        </div>
         <button class="button back-button">Back to Menu</button>
         <footer><p>The EXCOR System</p><p class="credit">Made by: Abdulelah AlHarbi | SRSI23,24 EXCOR</p></footer>
     </div>
 
-    <!-- NEW: Tutor Scanner Page -->
+    <!-- Tutor Scanner Page -->
     <div id="tutor-scanner-page" class="page container">
         <div class="card">
             <div class="page-header" style="gap: 20px;">
@@ -245,7 +248,10 @@
         document.getElementById('remove-points').addEventListener('click', () => handlePoints('remove'));
         
         function startScanner(readerId, resultId) {
-            if (scanner) return;
+            if (scanner) {
+                try { scanner.clear(); } catch(e) {}
+                scanner = null;
+            }
             const resultDiv = document.getElementById(resultId);
             let isProcessing = false;
 
