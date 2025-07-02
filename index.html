@@ -1,312 +1,49 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The EXCOR System</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --primary-font: 'Poppins', sans-serif;
-            --bg-color: #f0f2f5;
-            --card-bg: #ffffff;
-            --text-color: #333;
-            --heading-color: #1a253c;
-            --subtle-text: #888;
-            --primary-color: #2c5282;
-            --primary-hover: #2a4365;
-            --success-bg: #e6f7f2;
-            --success-text: #28a745;
-            --error-bg: #fff1f0;
-            --error-text: #e53e3e;
-            --shadow: 0 7px 25px rgba(0, 0, 0, 0.08);
-            --border-radius: 12px;
-            --gold: #ffd700;
-            --silver: #c0c0c0;
-            --bronze: #cd7f32;
-        }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
-        body { font-family: var(--primary-font); background-color: var(--bg-color); color: var(--text-color); margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; box-sizing: border-box; }
-        .container { max-width: 450px; width: 100%; text-align: center; }
-        .page { display: none; animation: fadeIn 0.5s ease-out; }
-        .page.active { display: block; }
+const { google } = require('googleapis');
 
-        /* Shared Styles */
-        .card { background: var(--card-bg); padding: 40px 35px; border-radius: var(--border-radius); box-shadow: var(--shadow); }
-        .form-header, .page-header { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; margin-bottom: 30px; }
-        .logo { width: 180px; height: 180px; }
-        h1, h2 { margin: 0; color: var(--heading-color); font-weight: 700; }
-        h1 { font-size: 1.8em; }
-        h2 { font-size: 1.5em; }
-        .form-group { margin-bottom: 20px; text-align: left; }
-        .form-group label { display: block; margin-bottom: 8px; font-weight: 600; font-size: 0.9em; }
-        select, input { width: 100%; padding: 14px; border-radius: 8px; border: 1px solid #ddd; background-color: #f9fafb; box-sizing: border-box; font-size: 1em; transition: border-color 0.2s, box-shadow 0.2s; }
-        select:focus, input:focus { outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 3px rgba(44, 82, 130, 0.1); }
-        .button { width: 100%; padding: 15px; border: none; border-radius: 8px; background-color: var(--primary-color); color: white; font-size: 1.1em; font-weight: 600; cursor: pointer; transition: all 0.2s ease-in-out; }
-        .button:hover { background-color: var(--primary-hover); transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        .status-message { color: var(--error-text); margin-top: 15px; min-height: 20px; font-weight: 500; }
-        footer { margin-top: 30px; font-size: 0.9em; color: var(--subtle-text); }
-        .credit { font-size: 0.8em; margin-top: 5px; }
-        .back-button { margin-top: 20px; background-color: #6c757d; }
-        .back-button:hover { background-color: #5a6268; }
-
-        /* Menu Page Styles */
-        .menu-buttons { display: flex; flex-direction: column; gap: 15px; }
-        #welcome-message { font-size: 1.1em; font-weight: 500; color: var(--subtle-text); margin-top: 5px; margin-bottom: 25px; }
-        #goto-cup { display: none; background-color: var(--gold); color: #333; }
-        #goto-cup:hover { background-color: #e6c300; }
-
-        /* Scanner & Points Page Styles */
-        #reader { background-color: var(--card-bg); border-radius: var(--border-radius); box-shadow: var(--shadow); overflow: hidden; border: 1px solid #eee; }
-        #result, #points-result, #quote-result { font-size: 1.2em; font-weight: 500; padding: 20px; border-radius: var(--border-radius); transition: all 0.3s ease-in-out; min-height: 30px; line-height: 1.5; margin-bottom: 25px; }
-        .info { background-color: #f0f2f5; color: var(--text-color); }
-        .success { background-color: var(--success-bg); color: var(--success-text); }
-        .error { background-color: var(--error-bg); color: var(--error-text); }
-        .button-group { display: flex; gap: 10px; }
-        .button.add { background-color: #28a745; }
-        .button.add:hover { background-color: #218838; }
-        .button.remove { background-color: #dc3545; }
-        .button.remove:hover { background-color: #c82333; }
-        #excor-balance { font-weight: 600; color: var(--primary-color); margin-bottom: 20px; }
-
-        /* Leaderboard, Transcript, Quotes Styles */
-        .ranking-type-selector { display: flex; justify-content: center; gap: 20px; margin-bottom: 20px; }
-        #leaderboard-display, #transcript-display, #quotes-view-display { margin-top: 20px; text-align: left; }
-        .leaderboard-item, .transcript-item, .quote-item { padding: 12px; margin-bottom: 8px; background-color: #f9fafb; border-radius: 8px; border: 1px solid #eee; font-size: 0.95em; }
-        .leaderboard-item { display: flex; align-items: center; }
-        .leaderboard-item .rank { font-size: 1.2em; font-weight: 700; color: var(--subtle-text); width: 40px; }
-        .leaderboard-item .name { font-weight: 600; flex-grow: 1; }
-        .leaderboard-item .points { font-size: 1.1em; font-weight: 700; color: var(--primary-color); }
-        .leaderboard-item.rank-1 .rank { color: var(--gold); }
-        .leaderboard-item.rank-2 .rank { color: var(--silver); }
-        .leaderboard-item.rank-3 .rank { color: var(--bronze); }
-        .transcript-item, .quote-item { line-height: 1.6; }
-        .t-excor, .q-author { color: var(--primary-color); font-weight: 600; }
-        .t-group { color: #dd6b20; font-weight: 600; } /* Orange for group */
-        .t-reason, .q-quote { color: #38a169; } /* Green for reason */
-        .t-points { font-weight: 700; }
-        .loader { border: 4px solid #f3f3f3; border-top: 4px solid var(--primary-color); border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 20px auto; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        hr { border: none; border-top: 1px solid #e2e8f0; margin: 30px 0; }
-
-    </style>
-</head>
-<body>
-    <!-- Login Page -->
-    <div id="login-page" class="page active container">
-        <div class="card"><div class="form-header"><img src="assets/logo.png" alt="SRSI Logo" class="logo"><h1>The EXCOR System</h1></div><form id="login-form"><div class="form-group"><label for="username">Username</label><select id="username" name="username"><option value="Umairah">Umairah 🇲🇾</option><option value="Wasan">Lead Wasan 👑</option><option value="Halawani">Halawani 🥶</option><option value="Sana">Sana 👻</option><option value="Abdulmajeed">Abdulmajeed 🤠</option><option value="Elyas">Elyas 😎</option><option value="Bandar">Bandar 👾</option></select></div><div class="form-group"><label for="password">Password</label><input type="password" id="password" name="password" required></div><button type="submit" class="button">Login</button><p id="login-error" class="status-message"></p></form></div>
-        <footer><p class="credit">Made by: Abdulelah AlHarbi | SRSI23,24 EXCOR</p></footer>
-    </div>
-
-    <!-- Menu Page -->
-    <div id="menu-page" class="page container">
-        <div class="card"><div class="page-header"><img src="assets/logo.png" alt="SRSI Logo" class="logo"></div><p id="welcome-message"></p><div class="menu-buttons"><button id="goto-attendance" class="button">Attendance</button><button id="goto-points" class="button">EXCOR Points</button><button id="goto-quotes" class="button">Quotes</button><button id="goto-transcript" class="button">Transcript</button><button id="goto-cup" class="button">EXCOR Cup</button></div></div>
-         <footer><p class="credit">Made by: Abdulelah AlHarbi | SRSI23,24 EXCOR</p></footer>
-    </div>
-
-    <!-- Scanner Page -->
-    <div id="scanner-page" class="page container">
-        <section id="result" class="info">Ready to scan...</section><section id="reader"></section><button class="button back-button">Back to Menu</button>
-        <footer><p>The EXCOR System</p><p class="credit">Made by: Abdulelah AlHarbi | SRSI23,24 EXCOR</p></footer>
-    </div>
-
-    <!-- Points Page -->
-    <div id="points-page" class="page container">
-        <div class="card"><h2>EXCOR Points</h2><p id="excor-balance">Your Balance: Loading...</p><div class="form-group"><label for="student-select">Select Student</label><select id="student-select" name="student-select"><option>Loading students...</option></select></div><div class="form-group"><label for="points-input">Points</label><input type="number" id="points-input" placeholder="e.g., 5" required></div><div class="form-group"><label for="reason-input">Reason</label><input type="text" id="reason-input" placeholder="e.g., Being an idiot" required></div><div class="button-group"><button id="add-points" class="button add">Add +</button><button id="remove-points" class="button remove">Remove -</button></div><p id="points-result" class="status-message"></p></div>
-        <button class="button back-button">Back to Menu</button><footer><p class="credit">Made by: Abdulelah AlHarbi | SRSI23,24 EXCOR</p></footer>
-    </div>
-
-    <!-- Quotes Page -->
-    <div id="quotes-page" class="page container">
-        <div class="card">
-            <h2>Add a Quote</h2>
-            <form id="add-quote-form">
-                <div class="form-group"><label for="quote-input">The Quote</label><input type="text" id="quote-input" required></div>
-                <div class="form-group"><label for="author-input">Who said it?</label><input type="text" id="author-input" required></div>
-                <button type="submit" class="button">Add Quote</button>
-                <p id="quote-result" class="status-message"></p>
-            </form>
-            <hr>
-            <h2>View Quotes</h2>
-            <div class="form-group"><label for="quotes-date">Select Date</label><input type="date" id="quotes-date"></div>
-            <div id="quotes-view-display"></div>
-        </div>
-        <button class="button back-button">Back to Menu</button>
-        <footer><p class="credit">Made by: Abdulelah AlHarbi | SRSI23,24 EXCOR</p></footer>
-    </div>
-
-    <!-- EXCOR Cup Ranking Page -->
-    <div id="cup-page" class="page container">
-        <div class="card"><h2>EXCOR Cup Rankings</h2><div class="ranking-type-selector"><label><input type="radio" name="rankingType" value="student" checked> Student</label><label><input type="radio" name="rankingType" value="group"> EXCOR Group</label></div><div class="form-group"><label for="week-select">Select Week</label><select id="week-select"><option value="">-- Choose a week --</option><option value="Week1">Week 1</option><option value="Week2">Week 2</option><option value="Week3">Week 3</option><option value="Week4">Week 4</option><option value="Week5">Week 5</option><option value="Week6">Week 6</option><option value="Total">Total</option></select></div><div id="leaderboard-display"></div></div>
-        <button class="button back-button">Back to Menu</button><footer><p class="credit">Made by: Abdulelah AlHarbi | SRSI23,24 EXCOR</p></footer>
-    </div>
-
-    <!-- Transcript Page -->
-    <div id="transcript-page" class="page container">
-        <div class="card"><h2>Daily Points Transcript</h2><div class="form-group"><label for="transcript-date">Select Date</label><input type="date" id="transcript-date"></div><div id="transcript-display"></div></div>
-        <button class="button back-button">Back to Menu</button><footer><p class="credit">Made by: Abdulelah AlHarbi | SRSI23,24 EXCOR</p></footer>
-    </div>
-
-    <script src="https://unpkg.com/html5-qrcode"></script>
-    <script>
-        const pages = document.querySelectorAll('.page');
-        const loginForm = document.getElementById('login-form');
-        const welcomeMessage = document.getElementById('welcome-message');
-        const studentSelect = document.getElementById('student-select');
-        const excorBalanceEl = document.getElementById('excor-balance');
-        const cupButton = document.getElementById('goto-cup');
-
-        const credentials = { "Umairah": "1212", "Wasan": "2121", "Halawani": "1313", "Sana": "3131", "Abdulmajeed": "1414", "Elyas": "4141", "Bandar": "1515" };
-        let scanner = null;
-        let loggedInUser = null;
-
-        function showPage(pageId) {
-            pages.forEach(page => page.classList.remove('active'));
-            document.getElementById(pageId).classList.add('active');
-        }
-        
-        loginForm.addEventListener('submit', function(event) {
-            event.preventDefault();
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
-            const errorEl = document.getElementById('login-error');
-
-            if (credentials[username] && credentials[username] === password) {
-                const selectEl = document.getElementById('username');
-                const selectedText = selectEl.options[selectEl.selectedIndex].text;
-                loggedInUser = username; 
-                welcomeMessage.textContent = `Welcome EXCOR ${selectedText}!`;
-                
-                if (username === 'Wasan') {
-                    cupButton.style.display = 'block';
-                } else {
-                    cupButton.style.display = 'none';
-                }
-                showPage('menu-page');
-            } else {
-                errorEl.textContent = 'Invalid username or password.';
-            }
+exports.handler = async function (event) {
+    // This function does not require a POST request, it can be a GET
+    try {
+        const auth = new google.auth.GoogleAuth({
+            credentials: {
+                client_email: process.env.GOOGLE_CLIENT_EMAIL,
+                private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+            },
+            scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
         });
 
-        document.getElementById('goto-attendance').addEventListener('click', () => { showPage('scanner-page'); startScanner(); });
-        document.getElementById('goto-points').addEventListener('click', () => { showPage('points-page'); fetchExcorBalance(); if (studentSelect.options.length <= 1) { populateStudents(); } });
-        document.getElementById('goto-cup').addEventListener('click', () => { showPage('cup-page'); });
-        
-        document.getElementById('goto-transcript').addEventListener('click', () => {
-            const dateInput = document.getElementById('transcript-date');
-            if (!dateInput.value) {
-                dateInput.value = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Riyadh' })).toISOString().split('T')[0];
-            }
-            fetchTranscript();
-            showPage('transcript-page');
+        const sheets = google.sheets({ version: 'v4', auth });
+        const spreadsheetId = process.env.GOOGLE_SHEET_ID;
+        const sheetName = 'EXCORS';
+
+        // Fetch Username (E), Password (F), and Type (G) starting from row 2
+        const response = await sheets.spreadsheets.values.get({
+            spreadsheetId,
+            range: `${sheetName}!E2:G`,
         });
 
-        document.getElementById('goto-quotes').addEventListener('click', () => {
-            const dateInput = document.getElementById('quotes-date');
-            if (!dateInput.value) {
-                dateInput.value = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Riyadh' })).toISOString().split('T')[0];
+        const rows = response.data.values || [];
+        const users = rows.map(row => {
+            // Ensure row has all required data before creating an object
+            if (row[0] && row[1] && row[2]) {
+                return {
+                    username: row[0].trim(), // Column E
+                    password: row[1].trim(), // Column F
+                    type: row[2].trim(),     // Column G
+                };
             }
-            fetchQuotes();
-            showPage('quotes-page');
-        });
+            return null;
+        }).filter(user => user !== null); // Filter out any empty rows
 
-        document.querySelectorAll('.back-button').forEach(button => {
-            button.addEventListener('click', () => {
-                if (scanner) { try { scanner.clear(); } catch(e) {} scanner = null; }
-                showPage('menu-page');
-            });
-        });
+        return {
+            statusCode: 200,
+            body: JSON.stringify(users),
+        };
 
-        // --- Quotes Logic ---
-        const addQuoteForm = document.getElementById('add-quote-form');
-        const quoteResultEl = document.getElementById('quote-result');
-        const quotesDateInput = document.getElementById('quotes-date');
-        const quotesViewDisplay = document.getElementById('quotes-view-display');
-
-        addQuoteForm.addEventListener('submit', async function(event) {
-            event.preventDefault();
-            const quoteInput = document.getElementById('quote-input');
-            const authorInput = document.getElementById('author-input');
-            
-            quoteResultEl.className = 'status-message info';
-            quoteResultEl.textContent = 'Adding quote...';
-
-            try {
-                const response = await fetch('/.netlify/functions/add-quote', {
-                    method: 'POST',
-                    body: JSON.stringify({ quote: quoteInput.value, author: authorInput.value, recorderName: loggedInUser })
-                });
-                const data = await response.json();
-                quoteResultEl.textContent = data.message;
-                quoteResultEl.className = `status-message ${data.status}`;
-                if (data.status === 'success') {
-                    quoteInput.value = '';
-                    authorInput.value = '';
-                    fetchQuotes(); // Refresh the view
-                }
-            } catch (error) {
-                quoteResultEl.textContent = 'Error communicating with server.';
-                quoteResultEl.className = 'status-message error';
-            }
-        });
-
-        async function fetchQuotes() {
-            const selectedDate = quotesDateInput.value;
-            if (!selectedDate) {
-                quotesViewDisplay.innerHTML = '';
-                return;
-            }
-            quotesViewDisplay.innerHTML = '<div class="loader"></div>';
-            try {
-                const response = await fetch('/.netlify/functions/get-quotes', {
-                    method: 'POST',
-                    body: JSON.stringify({ date: selectedDate })
-                });
-                if (!response.ok) throw new Error('Failed to fetch quotes');
-                const data = await response.json();
-                renderQuotes(data);
-            } catch (error) {
-                quotesViewDisplay.innerHTML = '<p class="error">Could not load quotes.</p>';
-            }
-        }
-        quotesDateInput.addEventListener('change', fetchQuotes);
-
-        function renderQuotes(data) {
-            quotesViewDisplay.innerHTML = '';
-            if (data.length === 0) {
-                quotesViewDisplay.innerHTML = '<p>No quotes found for this date.</p>';
-                return;
-            }
-            data.forEach(entry => {
-                const item = document.createElement('div');
-                item.className = 'quote-item';
-                item.innerHTML = `<span class="q-author">${entry.author}:</span> <span class="q-quote">"${entry.quote}"</span>`;
-                quotesViewDisplay.appendChild(item);
-            });
-        }
-        
-        // --- Remaining JS functions (unchanged) ---
-        const transcriptDateInput = document.getElementById('transcript-date');
-        const transcriptDisplay = document.getElementById('transcript-display');
-        async function fetchTranscript() { const selectedDate = transcriptDateInput.value; if (!selectedDate) { transcriptDisplay.innerHTML = ''; return; } transcriptDisplay.innerHTML = '<div class="loader"></div>'; try { const response = await fetch('/.netlify/functions/get-transcript', { method: 'POST', body: JSON.stringify({ date: selectedDate }) }); if (!response.ok) throw new Error('Failed to fetch transcript'); const data = await response.json(); renderTranscript(data); } catch (error) { transcriptDisplay.innerHTML = '<p class="error">Could not load transcript.</p>'; } }
-        transcriptDateInput.addEventListener('change', fetchTranscript);
-        function renderTranscript(data) { transcriptDisplay.innerHTML = ''; if (data.length === 0) { transcriptDisplay.innerHTML = '<p>No points transactions found for this date.</p>'; return; } data.forEach(entry => { const item = document.createElement('div'); item.className = 'transcript-item'; item.innerHTML = ` <span class="t-excor">EXCOR ${entry.excorName}</span> gave <span class="t-group">${entry.studentExcorGroup}</span> <b class="t-points">${entry.points} points</b> for: <span class="t-reason">"${entry.reason}"</span> `; transcriptDisplay.appendChild(item); }); }
-        const weekSelect = document.getElementById('week-select');
-        const leaderboardDisplay = document.getElementById('leaderboard-display');
-        const rankingTypeRadios = document.querySelectorAll('input[name="rankingType"]');
-        async function fetchRankings() { const selectedWeek = weekSelect.value; const selectedType = document.querySelector('input[name="rankingType"]:checked').value; if (!selectedWeek) { leaderboardDisplay.innerHTML = ''; return; } leaderboardDisplay.innerHTML = '<div class="loader"></div>'; try { const response = await fetch('/.netlify/functions/get-cup-ranking', { method: 'POST', body: JSON.stringify({ week: selectedWeek, type: selectedType }) }); if (!response.ok) throw new Error('Failed to fetch rankings'); const data = await response.json(); renderLeaderboard(data, selectedType); } catch (error) { leaderboardDisplay.innerHTML = '<p class="error">Could not load rankings.</p>'; } }
-        weekSelect.addEventListener('change', fetchRankings);
-        rankingTypeRadios.forEach(radio => radio.addEventListener('change', fetchRankings));
-        function renderLeaderboard(data, type) { leaderboardDisplay.innerHTML = ''; if (data.length === 0) { leaderboardDisplay.innerHTML = '<p>No points data found for this week.</p>'; return; } data.forEach((item, index) => { const rank = index + 1; const leaderboardItem = document.createElement('div'); leaderboardItem.className = `leaderboard-item rank-${rank}`; leaderboardItem.innerHTML = `<div class="rank">#${rank}</div><div class="name">${item.name}</div><div class="points">${item.points} pts</div>`; leaderboardDisplay.appendChild(leaderboardItem); }); }
-        async function populateStudents() { try { const response = await fetch('/.netlify/functions/get-students'); if (!response.ok) throw new Error('Network response was not ok'); const students = await response.json(); studentSelect.innerHTML = ''; students.forEach(student => { const option = document.createElement('option'); option.value = student; option.textContent = student; studentSelect.appendChild(option); }); } catch (error) { studentSelect.innerHTML = '<option>Could not load students</option>'; } }
-        async function fetchExcorBalance() { excorBalanceEl.textContent = 'Your Balance: Loading...'; if (!loggedInUser) { excorBalanceEl.textContent = 'Your Balance: Error - Not logged in.'; return; } try { const response = await fetch('/.netlify/functions/get-excor-balance', { method: 'POST', body: JSON.stringify({ excorName: loggedInUser }) }); if (!response.ok) { const errorText = await response.text(); throw new Error(`Failed to fetch balance. Server responded with: ${response.status} ${errorText}`); } const data = await response.json(); if (typeof data.balance !== 'undefined') { excorBalanceEl.textContent = `Your Balance: ${data.balance} Points`; } else { throw new Error('Balance not found in server response.'); } } catch (error) { console.error("fetchExcorBalance Error:", error); excorBalanceEl.textContent = 'Your Balance: Could not load.'; } }
-        async function handlePoints(action) { const studentName = studentSelect.value; const points = document.getElementById('points-input').value; const reason = document.getElementById('reason-input').value; const resultEl = document.getElementById('points-result'); if (!points || parseInt(points) <= 0) { resultEl.className = 'status-message error'; resultEl.textContent = 'Please enter a valid number of points.'; return; } if (!reason.trim()) { resultEl.className = 'status-message error'; resultEl.textContent = 'A reason is required.'; return; } resultEl.className = 'status-message info'; resultEl.textContent = `${action === 'add' ? 'Adding' : 'Removing'} points...`; try { const response = await fetch('/.netlify/functions/manage-points', { method: 'POST', body: JSON.stringify({ studentName, points: parseInt(points), action, reason, excorName: loggedInUser }) }); const data = await response.json(); resultEl.textContent = data.message; resultEl.className = `status-message ${data.status}`; if (data.status === 'success') { fetchExcorBalance(); } } catch (error) { resultEl.textContent = 'Error communicating with server.'; resultEl.className = 'status-message error'; } }
-        document.getElementById('add-points').addEventListener('click', () => handlePoints('add'));
-        document.getElementById('remove-points').addEventListener('click', () => handlePoints('remove'));
-        function startScanner() { if (scanner) return; const resultDiv = document.getElementById('result'); let isProcessing = false; async function onScanSuccess(decodedText) { if (isProcessing) return; isProcessing = true; resultDiv.textContent = `Processing: ${decodedText}...`; resultDiv.className = 'info'; try { const response = await fetch('/.netlify/functions/log-attendance', { method: 'POST', body: JSON.stringify({ studentId: decodedText }) }); const data = await response.json(); resultDiv.textContent = data.message; resultDiv.className = `info ${data.status}`; } catch (error) { resultDiv.textContent = 'Error communicating with server.'; resultDiv.className = 'info error'; } setTimeout(() => { isProcessing = false; resultDiv.textContent = 'Ready for next scan...'; resultDiv.className = 'info'; }, 4000); } scanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: { width: 250, height: 250 } }, false); scanner.render(onScanSuccess, () => {}); }
-
-    </script>
-</body>
-</html>
+    } catch (error) {
+        console.error('Function Error:', error);
+        return {
+            statusCode: 500,
+            body: JSON.stringify({ message: `An error occurred while fetching users: ${error.message}` }),
+        };
+    }
+};
