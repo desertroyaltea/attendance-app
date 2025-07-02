@@ -59,8 +59,8 @@
         #goto-cup:hover { background-color: #e6c300; }
 
         /* Scanner & Points Page Styles */
-        #reader { background-color: var(--card-bg); border-radius: var(--border-radius); box-shadow: var(--shadow); overflow: hidden; border: 1px solid #eee; }
-        #result, #points-result, #quote-result { font-size: 1.2em; font-weight: 500; padding: 20px; border-radius: var(--border-radius); transition: all 0.3s ease-in-out; min-height: 30px; line-height: 1.5; margin-bottom: 25px; }
+        .reader-container { background-color: var(--card-bg); border-radius: var(--border-radius); box-shadow: var(--shadow); overflow: hidden; border: 1px solid #eee; }
+        .result-box { font-size: 1.2em; font-weight: 500; padding: 20px; border-radius: var(--border-radius); transition: all 0.3s ease-in-out; min-height: 30px; line-height: 1.5; margin-bottom: 25px; }
         .info { background-color: #f0f2f5; color: var(--text-color); }
         .success { background-color: var(--success-bg); color: var(--success-text); }
         .error { background-color: var(--error-bg); color: var(--error-text); }
@@ -100,14 +100,34 @@
         <footer><p class="credit">Made by: Abdulelah AlHarbi | SRSI23,24 EXCOR</p></footer>
     </div>
 
-    <!-- Menu Page -->
+    <!-- Menu Page (for EXCORs) -->
     <div id="menu-page" class="page container">
         <div class="card"><div class="page-header"><img src="assets/logo.png" alt="SRSI Logo" class="logo"></div><p id="welcome-message"></p><div class="menu-buttons"><button id="goto-attendance" class="button">Attendance</button><button id="goto-points" class="button">EXCOR Points</button><button id="goto-quotes" class="button">Quotes</button><button id="goto-transcript" class="button">Transcript</button><button id="goto-cup" class="button">EXCOR Cup</button></div></div>
          <footer><p class="credit">Made by: Abdulelah AlHarbi | SRSI23,24 EXCOR</p></footer>
     </div>
 
+    <!-- Scanner Page (for EXCORs) -->
+    <div id="scanner-page" class="page container">
+        <section id="excor-result" class="result-box info">Ready to scan...</section>
+        <section id="excor-reader" class="reader-container"></section>
+        <button class="button back-button">Back to Menu</button>
+        <footer><p>The EXCOR System</p><p class="credit">Made by: Abdulelah AlHarbi | SRSI23,24 EXCOR</p></footer>
+    </div>
+
+    <!-- NEW: Tutor Scanner Page -->
+    <div id="tutor-scanner-page" class="page container">
+        <div class="card">
+            <div class="page-header" style="gap: 20px;">
+                <img src="assets/logo.png" alt="SRSI Logo" class="logo" style="width: 120px; height: 120px;">
+                <p id="tutor-welcome-message" style="font-size: 1.2em; font-weight: 600; margin: 0;"></p>
+            </div>
+            <section id="tutor-result" class="result-box info">Ready to scan...</section>
+            <section id="tutor-reader" class="reader-container"></section>
+        </div>
+        <footer><p>The EXCOR System</p><p class="credit">Made by: Abdulelah AlHarbi | SRSI23,24 EXCOR</p></footer>
+    </div>
+
     <!-- Other pages remain the same -->
-    <div id="scanner-page" class="page container"> <section id="result" class="info">Ready to scan...</section><section id="reader"></section><button class="button back-button">Back to Menu</button> <footer><p>The EXCOR System</p><p class="credit">Made by: Abdulelah AlHarbi | SRSI23,24 EXCOR</p></footer> </div>
     <div id="points-page" class="page container"> <div class="card"><h2>EXCOR Points</h2><p id="excor-balance">Your Balance: Loading...</p><div class="form-group"><label for="student-select">Select Student</label><select id="student-select" name="student-select"><option>Loading students...</option></select></div><div class="form-group"><label for="points-input">Points</label><input type="number" id="points-input" placeholder="e.g., 5" required></div><div class="form-group"><label for="reason-input">Reason</label><input type="text" id="reason-input" placeholder="e.g., Won competition" required></div><div class="button-group"><button id="add-points" class="button add">Add +</button><button id="remove-points" class="button remove">Remove -</button></div><p id="points-result" class="status-message"></p></div> <button class="button back-button">Back to Menu</button><footer><p class="credit">Made by: Abdulelah AlHarbi | SRSI23,24 EXCOR</p></footer> </div>
     <div id="quotes-page" class="page container"> <div class="card"> <h2>Add a Quote</h2> <form id="add-quote-form"> <div class="form-group"><label for="quote-input">The Quote</label><input type="text" id="quote-input" required></div> <div class="form-group"><label for="author-input">Who said it?</label><input type="text" id="author-input" required></div> <button type="submit" class="button">Add Quote</button> <p id="quote-result" class="status-message"></p> </form> <hr> <h2>View Quotes</h2> <div class="form-group"><label for="quotes-date">Select Date</label><input type="date" id="quotes-date"></div> <div id="quotes-view-display"></div> </div> <button class="button back-button">Back to Menu</button> <footer><p class="credit">Made by: Abdulelah AlHarbi | SRSI23,24 EXCOR</p></footer> </div>
     <div id="cup-page" class="page container"> <div class="card"><h2>EXCOR Cup Rankings</h2><div class="ranking-type-selector"><label><input type="radio" name="rankingType" value="student" checked> Student</label><label><input type="radio" name="rankingType" value="group"> EXCOR Group</label></div><div class="form-group"><label for="week-select">Select Week</label><select id="week-select"><option value="">-- Choose a week --</option><option value="Week1">Week 1</option><option value="Week2">Week 2</option><option value="Week3">Week 3</option><option value="Week4">Week 4</option><option value="Week5">Week 5</option><option value="Week6">Week 6</option><option value="Total">Total</option></select></div><div id="leaderboard-display"></div></div> <button class="button back-button">Back to Menu</button><footer><p class="credit">Made by: Abdulelah AlHarbi | SRSI23,24 EXCOR</p></footer> </div>
@@ -119,14 +139,15 @@
         const pages = document.querySelectorAll('.page');
         const loginForm = document.getElementById('login-form');
         const welcomeMessage = document.getElementById('welcome-message');
+        const tutorWelcomeMessage = document.getElementById('tutor-welcome-message');
         const studentSelect = document.getElementById('student-select');
         const excorBalanceEl = document.getElementById('excor-balance');
         const cupButton = document.getElementById('goto-cup');
         const usernameSelect = document.getElementById('username');
 
-        let allUsers = []; // Will store user data from the sheet
+        let allUsers = []; 
         let scanner = null;
-        let loggedInUser = null; // Will store the full user object {username, password, type}
+        let loggedInUser = null; 
 
         // --- CORE FUNCTIONS ---
         function showPage(pageId) {
@@ -140,11 +161,11 @@
                 if (!response.ok) throw new Error('Failed to fetch user list');
                 allUsers = await response.json();
                 
-                usernameSelect.innerHTML = ''; // Clear "Loading..."
+                usernameSelect.innerHTML = ''; 
                 allUsers.forEach(user => {
                     const option = document.createElement('option');
-                    option.value = user.username; // The value will be the simple name for logic
-                    option.textContent = user.username; // The display text will have emojis
+                    option.value = user.username;
+                    option.textContent = user.username;
                     usernameSelect.appendChild(option);
                 });
             } catch (error) {
@@ -165,18 +186,17 @@
             const user = allUsers.find(u => u.username === selectedUsername);
 
             if (user && user.password === password) {
-                loggedInUser = user; // Store the entire user object
-                let title = user.type; // e.g., "EXCOR", "Tutor"
+                loggedInUser = user;
+                const selectedText = usernameSelect.options[usernameSelect.selectedIndex].text;
                 
-                // --- NEW: Role-based navigation ---
-                if (title.toLowerCase() === 'tutor') {
-                    // Tutors go directly to the scanner
-                    showPage('scanner-page');
-                    startScanner();
+                if (user.type.toLowerCase() === 'tutor') {
+                    tutorWelcomeMessage.textContent = `Welcome Tutor ${selectedText}!`;
+                    showPage('tutor-scanner-page');
+                    startScanner('tutor-reader', 'tutor-result');
                 } else {
-                    // EXCORs and Leads go to the menu
+                    let title = user.type;
                     if(user.username.includes("Wasan")) title = "Lead EXCOR";
-                    welcomeMessage.textContent = `Welcome ${title} ${user.username}!`;
+                    welcomeMessage.textContent = `Welcome ${title} ${selectedText}!`;
                     
                     if (title === 'Lead EXCOR') {
                         cupButton.style.display = 'block';
@@ -190,7 +210,7 @@
             }
         });
 
-        document.getElementById('goto-attendance').addEventListener('click', () => { showPage('scanner-page'); startScanner(); });
+        document.getElementById('goto-attendance').addEventListener('click', () => { showPage('scanner-page'); startScanner('excor-reader', 'excor-result'); });
         document.getElementById('goto-points').addEventListener('click', () => { showPage('points-page'); fetchExcorBalance(); if (studentSelect.options.length <= 1) { populateStudents(); } });
         document.getElementById('goto-cup').addEventListener('click', () => { showPage('cup-page'); });
         document.getElementById('goto-transcript').addEventListener('click', () => { const dateInput = document.getElementById('transcript-date'); if (!dateInput.value) { dateInput.value = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Riyadh' })).toISOString().split('T')[0]; } fetchTranscript(); showPage('transcript-page'); });
@@ -223,7 +243,34 @@
         async function handlePoints(action) { const studentName = studentSelect.value; const points = document.getElementById('points-input').value; const reason = document.getElementById('reason-input').value; const resultEl = document.getElementById('points-result'); if (!points || parseInt(points) <= 0) { resultEl.className = 'status-message error'; resultEl.textContent = 'Please enter a valid number of points.'; return; } if (!reason.trim()) { resultEl.className = 'status-message error'; resultEl.textContent = 'A reason is required.'; return; } resultEl.className = 'status-message info'; resultEl.textContent = `${action === 'add' ? 'Adding' : 'Removing'} points...`; try { const response = await fetch('/.netlify/functions/manage-points', { method: 'POST', body: JSON.stringify({ studentName, points: parseInt(points), action, reason, excorName: loggedInUser.username }) }); const data = await response.json(); resultEl.textContent = data.message; resultEl.className = `status-message ${data.status}`; if (data.status === 'success') { fetchExcorBalance(); } } catch (error) { resultEl.textContent = 'Error communicating with server.'; resultEl.className = 'status-message error'; } }
         document.getElementById('add-points').addEventListener('click', () => handlePoints('add'));
         document.getElementById('remove-points').addEventListener('click', () => handlePoints('remove'));
-        function startScanner() { if (scanner) return; const resultDiv = document.getElementById('result'); let isProcessing = false; async function onScanSuccess(decodedText) { if (isProcessing) return; isProcessing = true; resultDiv.textContent = `Processing: ${decodedText}...`; resultDiv.className = 'info'; try { const response = await fetch('/.netlify/functions/log-attendance', { method: 'POST', body: JSON.stringify({ studentId: decodedText }) }); const data = await response.json(); resultDiv.textContent = data.message; resultDiv.className = `info ${data.status}`; } catch (error) { resultDiv.textContent = 'Error communicating with server.'; resultDiv.className = 'info error'; } setTimeout(() => { isProcessing = false; resultDiv.textContent = 'Ready for next scan...'; resultDiv.className = 'info'; }, 4000); } scanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: { width: 250, height: 250 } }, false); scanner.render(onScanSuccess, () => {}); }
+        
+        function startScanner(readerId, resultId) {
+            if (scanner) return;
+            const resultDiv = document.getElementById(resultId);
+            let isProcessing = false;
+
+            async function onScanSuccess(decodedText) {
+                if (isProcessing) return;
+                isProcessing = true;
+                resultDiv.textContent = `Processing: ${decodedText}...`;
+                resultDiv.className = 'result-box info';
+                try {
+                    const response = await fetch('/.netlify/functions/log-attendance', {
+                        method: 'POST',
+                        body: JSON.stringify({ studentId: decodedText })
+                    });
+                    const data = await response.json();
+                    resultDiv.textContent = data.message;
+                    resultDiv.className = `result-box info ${data.status}`;
+                } catch (error) {
+                    resultDiv.textContent = 'Error communicating with server.';
+                    resultDiv.className = 'result-box info error';
+                }
+                setTimeout(() => { isProcessing = false; resultDiv.textContent = 'Ready for next scan...'; resultDiv.className = 'result-box info'; }, 4000);
+            }
+            scanner = new Html5QrcodeScanner(readerId, { fps: 10, qrbox: { width: 250, height: 250 } }, false);
+            scanner.render(onScanSuccess, () => {});
+        }
 
     </script>
 </body>
