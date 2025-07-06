@@ -17,7 +17,7 @@ exports.handler = async function (event) {
     // Fetch the specific range for student names from the 'Week1' sheet
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId,
-      range: 'Week1!B4:B48',
+      range: 'Week1!B3:B68',
     });
 
     // The API returns an array of arrays, e.g., [['Student A'], ['Student B']].
