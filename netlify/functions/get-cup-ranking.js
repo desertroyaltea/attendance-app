@@ -4,7 +4,8 @@ const { google } = require('googleapis');
 async function calculateSheetData(sheets, spreadsheetId, sheetName) {
     const response = await sheets.spreadsheets.values.get({
         spreadsheetId,
-        range: `${sheetName}!A1:BQ48`, 
+        // --- CHANGE 1: The range is now dynamic and will read all columns in the sheet ---
+        range: sheetName, 
     });
 
     const rows = response.data.values || [];
@@ -15,10 +16,11 @@ async function calculateSheetData(sheets, spreadsheetId, sheetName) {
     const eventHeaderRow = rows[0]; // Events are in Row 1
     const studentData = [];
 
-    // Find all columns that are 'Daily Points'
+    // Find all columns that are 'EXCOR Points'
     const pointColumnIndices = [];
     for (let i = 3; i < eventHeaderRow.length; i++) { // Start from column D (index 3)
-        if ((eventHeaderRow[i] || '').trim().toLowerCase() === 'daily points') {
+        // --- CHANGE 2: Looking for "EXCOR Points" instead of "Daily Points" ---
+        if ((eventHeaderRow[i] || '').trim().toLowerCase() === 'excor points') {
             pointColumnIndices.push(i);
         }
     }
@@ -26,14 +28,14 @@ async function calculateSheetData(sheets, spreadsheetId, sheetName) {
     // Iterate through student rows (starting from row 4, which is index 3)
     for (let i = 3; i < rows.length; i++) {
         const studentRow = rows[i];
-        // Ensure row has a student name (col C, index 2) and an EXCOR group (col B, index 1)
+        // Ensure row has a student name (col B, index 1) and an EXCOR group (col C, index 2)
         if (!studentRow || !studentRow[1] || !studentRow[2]) continue; 
 
         const studentName = studentRow[1].trim();
         const excorGroup = studentRow[2].trim();
         let totalPoints = 0;
 
-        // Sum points only from the 'Daily Points' columns
+        // Sum points only from the 'EXCOR Points' columns
         for (const colIndex of pointColumnIndices) {
             const points = parseInt(studentRow[colIndex] || '0');
             if (!isNaN(points)) {

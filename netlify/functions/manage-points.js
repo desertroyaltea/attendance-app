@@ -18,6 +18,27 @@ function formatDate(date) {
     return `${year}-${month}-${day}`;
 }
 
+// --- NEW: Helper function to determine the correct week sheet ---
+function getWeekSheetName(currentDate) {
+    // Dates are set in YYYY, MM-1, DD format for reliability
+    const week6_start = new Date(2025, 7, 10); // Aug 10
+    const week5_start = new Date(2025, 7, 3);  // Aug 3
+    const week4_start = new Date(2025, 6, 27); // July 27
+    const week3_start = new Date(2025, 6, 20); // July 20
+    const week2_start = new Date(2025, 6, 13); // July 13
+    const week1_start = new Date(2025, 6, 6);  // July 6
+
+    if (currentDate >= week6_start) return 'Week6';
+    if (currentDate >= week5_start) return 'Week5';
+    if (currentDate >= week4_start) return 'Week4';
+    if (currentDate >= week3_start) return 'Week3';
+    if (currentDate >= week2_start) return 'Week2';
+    if (currentDate >= week1_start) return 'Week1';
+    
+    return 'Week1'; // Default or fallback
+}
+
+
 exports.handler = async function (event) {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: 'Method Not Allowed' };
@@ -27,6 +48,9 @@ exports.handler = async function (event) {
     const { studentName, points, action, reason, excorName } = JSON.parse(event.body);
     const saudiTime = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Riyadh' }));
     const todayString = formatDate(saudiTime);
+    
+    // --- NEW: Dynamically get the current week's sheet name ---
+    const currentWeekSheet = getWeekSheetName(saudiTime);
 
     const auth = new google.auth.GoogleAuth({
       credentials: {
@@ -66,16 +90,16 @@ exports.handler = async function (event) {
         resource: { values: [[newExcorBalance]] },
     });
 
-    // --- 2. Update Daily Points in Week1 Sheet ---
-    const week1SheetName = 'Week1';
-    const week1Data = await sheets.spreadsheets.values.get({ spreadsheetId, range: `${week1SheetName}!A:AZ` });
-    const rows = week1Data.data.values || [];
+    // --- 2. Update EXCOR Points in the correct Weekly Sheet ---
+    const weekData = await sheets.spreadsheets.values.get({ spreadsheetId, range: `${currentWeekSheet}!A:AZ` });
+    const rows = weekData.data.values || [];
     const eventHeaderRow = rows[0];
     const dateHeaderRow = rows[1];
 
     let targetColumnIndex = -1;
     for (let i = 0; i < eventHeaderRow.length; i++) {
-        if (((eventHeaderRow[i] || '').trim().toLowerCase() === 'daily points') && (dateHeaderRow[i] ? formatDate(new Date(dateHeaderRow[i])) : null) === todayString) {
+        // --- CHANGE: Looking for "EXCOR Points" ---
+        if (((eventHeaderRow[i] || '').trim().toLowerCase() === 'excor points') && (dateHeaderRow[i] ? formatDate(new Date(dateHeaderRow[i])) : null) === todayString) {
             targetColumnIndex = i;
             break;
         }
@@ -84,7 +108,7 @@ exports.handler = async function (event) {
     if (targetColumnIndex === -1) {
         // If we fail here, we must refund the EXCOR's points
         await sheets.spreadsheets.values.update({ spreadsheetId, range: `${excorSheetName}!${excorCellToUpdate}`, valueInputOption: 'USER_ENTERED', resource: { values: [[currentExcorBalance]] } });
-        return { statusCode: 200, body: JSON.stringify({ status: 'error', message: `Could not find 'Daily Points' column for today in Week1.` }) };
+        return { statusCode: 200, body: JSON.stringify({ status: 'error', message: `Could not find 'EXCOR Points' column for today in ${currentWeekSheet}.` }) };
     }
 
     let targetRowIndex = -1;
@@ -97,35 +121,24 @@ exports.handler = async function (event) {
 
     if (targetRowIndex === -1) {
         await sheets.spreadsheets.values.update({ spreadsheetId, range: `${excorSheetName}!${excorCellToUpdate}`, valueInputOption: 'USER_ENTERED', resource: { values: [[currentExcorBalance]] } });
-        return { statusCode: 200, body: JSON.stringify({ status: 'error', message: `Student '${studentName}' not found in Week1.` }) };
+        return { statusCode: 200, body: JSON.stringify({ status: 'error', message: `Student '${studentName}' not found in ${currentWeekSheet}.` }) };
     }
 
-    // Get the student's EXCOR group from Column C (index 2)
     const studentExcorGroup = rows[targetRowIndex][2] ? `EXCOR ${rows[targetRowIndex][2]}'s Group` : "Unknown Group";
-
     const currentStudentPoints = parseInt(rows[targetRowIndex][targetColumnIndex] || '0');
     let pointsChange = action === 'add' ? points : -points;
     const newStudentPoints = currentStudentPoints + pointsChange;
 
     const studentCellToUpdate = toA1(targetColumnIndex) + (targetRowIndex + 1);
-    await sheets.spreadsheets.values.update({ spreadsheetId, range: `${week1SheetName}!${studentCellToUpdate}`, valueInputOption: 'USER_ENTERED', resource: { values: [[newStudentPoints]] } });
+    await sheets.spreadsheets.values.update({ spreadsheetId, range: `${currentWeekSheet}!${studentCellToUpdate}`, valueInputOption: 'USER_ENTERED', resource: { values: [[newStudentPoints]] } });
 
     // --- 3. Log the transaction in the Points Sheet ---
     const pointsLogSheetName = 'Points';
     const dateForLog = saudiTime.toLocaleDateString('en-US', { timeZone: 'Asia/Riyadh' });
-    // Add the student's EXCOR group to the log data array
-    const pointsLogData = [
-        dateForLog, 
-        studentName, 
-        excorName, 
-        pointsChange > 0 ? `+${pointsChange}` : pointsChange.toString(), 
-        reason,
-        studentExcorGroup // This will be logged to Column F
-    ];
+    const pointsLogData = [dateForLog, studentName, excorName, pointsChange > 0 ? `+${pointsChange}` : pointsChange.toString(), reason, studentExcorGroup];
     
     await sheets.spreadsheets.values.append({ spreadsheetId, range: pointsLogSheetName, valueInputOption: 'USER_ENTERED', resource: { values: [pointsLogData] } });
     
-    // --- Updated Confirmation Message ---
     const actionVerb = action === 'add' ? 'Added' : 'Removed';
     const successMessage = `${actionVerb} ${points} points for ${studentName}!`;
 
