@@ -6,7 +6,7 @@ exports.handler = async function (event) {
   }
 
   try {
-    const { RAsName } = JSON.parse(event.body);
+    const { excorName } = JSON.parse(event.body);
 
     const auth = new google.auth.GoogleAuth({
       credentials: {
@@ -18,7 +18,7 @@ exports.handler = async function (event) {
 
     const sheets = google.sheets({ version: 'v4', auth });
     const spreadsheetId = process.env.GOOGLE_SHEET_ID;
-    const sheetName = 'RAs';
+    const sheetName = 'EXCORS';
 
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId,
@@ -26,13 +26,13 @@ exports.handler = async function (event) {
     });
 
     const rows = response.data.values || [];
-    const RAsRow = rows.find(row => row[0] === RAsName);
+    const excorRow = rows.find(row => row[0] === excorName);
 
-    if (!RAsRow) {
-      return { statusCode: 404, body: JSON.stringify({ message: 'RA not found.' }) };
+    if (!excorRow) {
+      return { statusCode: 404, body: JSON.stringify({ message: 'EXCOR not found.' }) };
     }
 
-    const balance = parseInt(RAsRow[1] || '0');
+    const balance = parseInt(excorRow[1] || '0');
 
     return {
       statusCode: 200,
@@ -40,10 +40,10 @@ exports.handler = async function (event) {
     };
 
   } catch (error) {
-    console.error('Error fetching RA balance:', error);
+    console.error('Error fetching EXCOR balance:', error);
     return {
       statusCode: 500,
-      body: JSON.stringify({ message: 'Failed to fetch RA balance.' }),
+      body: JSON.stringify({ message: 'Failed to fetch EXCOR balance.' }),
     };
   }
 };

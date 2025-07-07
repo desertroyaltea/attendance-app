@@ -16,11 +16,11 @@ async function calculateSheetData(sheets, spreadsheetId, sheetName) {
     const eventHeaderRow = rows[0]; // Events are in Row 1
     const studentData = [];
 
-    // Find all columns that are 'RAs Points'
+    // Find all columns that are 'EXCOR Points'
     const pointColumnIndices = [];
     for (let i = 3; i < eventHeaderRow.length; i++) { // Start from column D (index 3)
-        // --- CHANGE 2: Looking for "Total Points" instead of "Daily Points" ---
-        if ((eventHeaderRow[i] || '').trim().toLowerCase() === 'total points') {
+        // --- CHANGE 2: Looking for "EXCOR Points" instead of "Daily Points" ---
+        if ((eventHeaderRow[i] || '').trim().toLowerCase() === 'excor points') {
             pointColumnIndices.push(i);
         }
     }
@@ -28,14 +28,14 @@ async function calculateSheetData(sheets, spreadsheetId, sheetName) {
     // Iterate through student rows (starting from row 4, which is index 3)
     for (let i = 3; i < rows.length; i++) {
         const studentRow = rows[i];
-        // Ensure row has a student name (col B, index 1) and an RAs group (col C, index 2)
+        // Ensure row has a student name (col B, index 1) and an EXCOR group (col C, index 2)
         if (!studentRow || !studentRow[1] || !studentRow[2]) continue; 
 
         const studentName = studentRow[1].trim();
-        const RAsGroup = studentRow[2].trim();
+        const excorGroup = studentRow[2].trim();
         let totalPoints = 0;
 
-        // Sum points only from the 'RAs Points' columns
+        // Sum points only from the 'EXCOR Points' columns
         for (const colIndex of pointColumnIndices) {
             const points = parseInt(studentRow[colIndex] || '0');
             if (!isNaN(points)) {
@@ -43,7 +43,7 @@ async function calculateSheetData(sheets, spreadsheetId, sheetName) {
             }
         }
         
-        studentData.push({ name: studentName, group: RAsGroup, points: totalPoints });
+        studentData.push({ name: studentName, group: excorGroup, points: totalPoints });
     }
     
     return studentData;
@@ -87,7 +87,7 @@ exports.handler = async function (event) {
         let finalPoints = {};
 
         if (type === 'group') {
-            // Aggregate points by RAs group
+            // Aggregate points by EXCOR group
             for (const student of aggregatedData) {
                 if(student.group){
                    finalPoints[student.group] = (finalPoints[student.group] || 0) + student.points;

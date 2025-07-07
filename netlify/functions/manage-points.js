@@ -23,10 +23,10 @@ function getWeekSheetName(currentDate) {
     // Dates are set in YYYY, MM-1, DD format for reliability
     const week6_start = new Date(2025, 7, 10); // Aug 10
     const week5_start = new Date(2025, 7, 3);  // Aug 3
-    const week4_start = new Date(2025, 6, 20); // July 27
-    const week3_start = new Date(2025, 6, 13); // July 20
-    const week2_start = new Date(2025, 6, 6); // July 13
-    const week1_start = new Date(2025, 5, 6);  // July 6
+    const week4_start = new Date(2025, 6, 27); // July 27
+    const week3_start = new Date(2025, 6, 20); // July 20
+    const week2_start = new Date(2025, 6, 13); // July 13
+    const week1_start = new Date(2025, 6, 6);  // July 6
 
     if (currentDate >= week6_start) return 'Week6';
     if (currentDate >= week5_start) return 'Week5';
@@ -45,7 +45,7 @@ exports.handler = async function (event) {
   }
 
   try {
-    const { studentName, points, action, reason, RAsName } = JSON.parse(event.body);
+    const { studentName, points, action, reason, excorName } = JSON.parse(event.body);
     const saudiTime = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Riyadh' }));
     const todayString = formatDate(saudiTime);
     
@@ -63,34 +63,34 @@ exports.handler = async function (event) {
     const sheets = google.sheets({ version: 'v4', auth });
     const spreadsheetId = process.env.GOOGLE_SHEET_ID;
 
-    // --- 1. Check and Update RAs Balance ---
-    const RAsSheetName = 'RAs';
-    const RAsData = await sheets.spreadsheets.values.get({
+    // --- 1. Check and Update EXCOR Balance ---
+    const excorSheetName = 'EXCORS';
+    const excorData = await sheets.spreadsheets.values.get({
         spreadsheetId,
-        range: `${RAsSheetName}!A:B`,
+        range: `${excorSheetName}!A:B`,
     });
-    const RAsRows = RAsData.data.values || [];
-    const RAsRowIndex = RAsRows.findIndex(row => row[0] === RAsName);
+    const excorRows = excorData.data.values || [];
+    const excorRowIndex = excorRows.findIndex(row => row[0] === excorName);
 
-    if (RAsRowIndex === -1) {
-        return { statusCode: 200, body: JSON.stringify({ status: 'error', message: `RA '${RAsName}' not found.` }) };
+    if (excorRowIndex === -1) {
+        return { statusCode: 200, body: JSON.stringify({ status: 'error', message: `EXCOR '${excorName}' not found.` }) };
     }
-    const currentRAsBalance = parseInt(RAsRows[RAsRowIndex][1] || '0');
+    const currentExcorBalance = parseInt(excorRows[excorRowIndex][1] || '0');
 
-    if (currentRAsBalance < points) {
-        return { statusCode: 200, body: JSON.stringify({ status: 'error', message: `Insufficient balance. You have ${currentRAsBalance} points.` }) };
+    if (currentExcorBalance < points) {
+        return { statusCode: 200, body: JSON.stringify({ status: 'error', message: `Insufficient balance. You have ${currentExcorBalance} points.` }) };
     }
     
-    const newRAsBalance = currentRAsBalance - points;
-    const RAsCellToUpdate = `B${RAsRowIndex + 1}`;
+    const newExcorBalance = currentExcorBalance - points;
+    const excorCellToUpdate = `B${excorRowIndex + 1}`;
     await sheets.spreadsheets.values.update({
         spreadsheetId,
-        range: `${RAsSheetName}!${RAsCellToUpdate}`,
+        range: `${excorSheetName}!${excorCellToUpdate}`,
         valueInputOption: 'USER_ENTERED',
-        resource: { values: [[newRAsBalance]] },
+        resource: { values: [[newExcorBalance]] },
     });
 
-    // --- 2. Update RAs Points in the correct Weekly Sheet ---
+    // --- 2. Update EXCOR Points in the correct Weekly Sheet ---
     const weekData = await sheets.spreadsheets.values.get({ spreadsheetId, range: `${currentWeekSheet}!A:AZ` });
     const rows = weekData.data.values || [];
     const eventHeaderRow = rows[0];
@@ -98,17 +98,17 @@ exports.handler = async function (event) {
 
     let targetColumnIndex = -1;
     for (let i = 0; i < eventHeaderRow.length; i++) {
-        // --- CHANGE: Looking for "RAs Points" ---
-        if (((eventHeaderRow[i] || '').trim().toLowerCase() === 'daily points') && (dateHeaderRow[i] ? formatDate(new Date(dateHeaderRow[i])) : null) === todayString) {
+        // --- CHANGE: Looking for "EXCOR Points" ---
+        if (((eventHeaderRow[i] || '').trim().toLowerCase() === 'excor points') && (dateHeaderRow[i] ? formatDate(new Date(dateHeaderRow[i])) : null) === todayString) {
             targetColumnIndex = i;
             break;
         }
     }
 
     if (targetColumnIndex === -1) {
-        // If we fail here, we must refund the RAs's points
-        await sheets.spreadsheets.values.update({ spreadsheetId, range: `${RAsSheetName}!${RAsCellToUpdate}`, valueInputOption: 'USER_ENTERED', resource: { values: [[currentRAsBalance]] } });
-        return { statusCode: 200, body: JSON.stringify({ status: 'error', message: `Could not find 'Daily Points' column for today in ${currentWeekSheet}.` }) };
+        // If we fail here, we must refund the EXCOR's points
+        await sheets.spreadsheets.values.update({ spreadsheetId, range: `${excorSheetName}!${excorCellToUpdate}`, valueInputOption: 'USER_ENTERED', resource: { values: [[currentExcorBalance]] } });
+        return { statusCode: 200, body: JSON.stringify({ status: 'error', message: `Could not find 'EXCOR Points' column for today in ${currentWeekSheet}.` }) };
     }
 
     let targetRowIndex = -1;
@@ -120,11 +120,11 @@ exports.handler = async function (event) {
     }
 
     if (targetRowIndex === -1) {
-        await sheets.spreadsheets.values.update({ spreadsheetId, range: `${RAsSheetName}!${RAsCellToUpdate}`, valueInputOption: 'USER_ENTERED', resource: { values: [[currentRAsBalance]] } });
+        await sheets.spreadsheets.values.update({ spreadsheetId, range: `${excorSheetName}!${excorCellToUpdate}`, valueInputOption: 'USER_ENTERED', resource: { values: [[currentExcorBalance]] } });
         return { statusCode: 200, body: JSON.stringify({ status: 'error', message: `Student '${studentName}' not found in ${currentWeekSheet}.` }) };
     }
 
-    const studentRAsGroup = rows[targetRowIndex][2] ? `RAs ${rows[targetRowIndex][2]}'s Group` : "Unknown Group";
+    const studentExcorGroup = rows[targetRowIndex][2] ? `EXCOR ${rows[targetRowIndex][2]}'s Group` : "Unknown Group";
     const currentStudentPoints = parseInt(rows[targetRowIndex][targetColumnIndex] || '0');
     let pointsChange = action === 'add' ? points : -points;
     const newStudentPoints = currentStudentPoints + pointsChange;
@@ -135,7 +135,7 @@ exports.handler = async function (event) {
     // --- 3. Log the transaction in the Points Sheet ---
     const pointsLogSheetName = 'Points';
     const dateForLog = saudiTime.toLocaleDateString('en-US', { timeZone: 'Asia/Riyadh' });
-    const pointsLogData = [dateForLog, studentName, RAsName, pointsChange > 0 ? `+${pointsChange}` : pointsChange.toString(), reason, studentRAsGroup];
+    const pointsLogData = [dateForLog, studentName, excorName, pointsChange > 0 ? `+${pointsChange}` : pointsChange.toString(), reason, studentExcorGroup];
     
     await sheets.spreadsheets.values.append({ spreadsheetId, range: pointsLogSheetName, valueInputOption: 'USER_ENTERED', resource: { values: [pointsLogData] } });
     
