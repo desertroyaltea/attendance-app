@@ -13,7 +13,7 @@ exports.handler = async function (event) {
 
         const sheets = google.sheets({ version: 'v4', auth });
         const spreadsheetId = process.env.GOOGLE_SHEET_ID;
-        const sheetName = 'EXCORS';
+        const sheetName = 'RAs';
 
         // Fetch Username (E), Password (F), and Type (G) starting from row 2
         const response = await sheets.spreadsheets.values.get({

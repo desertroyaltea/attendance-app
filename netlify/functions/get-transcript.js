@@ -46,12 +46,12 @@ exports.handler = async function (event) {
 
             if (entryDateString === requestedDateString) {
                 // De-structure the row to get all the needed values
-                const [ , , excorName, points, reason, studentExcorGroup] = row;
+                const [ , , RAsName, points, reason, studentRAsGroup] = row;
                 
                 // --- NEW: Return a structured object instead of a string ---
                 const entryData = {
-                    excorName: excorName || 'N/A',
-                    studentExcorGroup: studentExcorGroup || 'N/A',
+                    RAsName: RAsName || 'N/A',
+                    studentRAsGroup: studentRAsGroup || 'N/A',
                     points: points || 'N/A',
                     reason: reason || 'N/A'
                 };
