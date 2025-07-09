@@ -1,26 +1,10 @@
 const { google } = require('googleapis');
 
-function toA1(colIndex) {
-    let column = "";
-    let temp = colIndex + 1;
-    while (temp > 0) {
-        let mod = (temp - 1) % 26;
-        column = String.fromCharCode(65 + mod) + column;
-        temp = Math.floor((temp - 1) / 26);
-    }
-    return column;
-}
+function toA1(colIndex) { let column = ""; let temp = colIndex + 1; while (temp > 0) { let mod = (temp - 1) % 26; column = String.fromCharCode(65 + mod) + column; temp = Math.floor((temp - 1) / 26); } return column; }
+function formatDate(date) { const year = date.getFullYear(); const month = (date.getMonth() + 1).toString().padStart(2, '0'); const day = date.getDate().toString().padStart(2, '0'); return `${year}-${month}-${day}`; }
 
-function formatDate(date) {
-    const year = date.getFullYear();
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const day = date.getDate().toString().padStart(2, '0');
-    return `${year}-${month}-${day}`;
-}
-
-// --- NEW: Helper function to determine the correct week sheet ---
 function getWeekSheetName(currentDate) {
-    // Dates are set in YYYY, MM-1, DD format for reliability
+    // Corrected the start date for Week 1 to be July
     const week6_start = new Date(2025, 7, 10); // Aug 10
     const week5_start = new Date(2025, 7, 3);  // Aug 3
     const week4_start = new Date(2025, 6, 27); // July 27
@@ -38,77 +22,61 @@ function getWeekSheetName(currentDate) {
     return 'Week1'; // Default or fallback
 }
 
-
 exports.handler = async function (event) {
-  if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, body: 'Method Not Allowed' };
-  }
-
+  if (event.httpMethod !== 'POST') { return { statusCode: 405, body: 'Method Not Allowed' }; }
   try {
     const { studentName, points, action, reason, excorName } = JSON.parse(event.body);
     const saudiTime = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Riyadh' }));
     const todayString = formatDate(saudiTime);
-    
-    // --- NEW: Dynamically get the current week's sheet name ---
     const currentWeekSheet = getWeekSheetName(saudiTime);
+    const coordinators = ['Saud', 'Aban', 'Sultan'];
+    const isGiverCoordinator = coordinators.includes(excorName);
 
-    const auth = new google.auth.GoogleAuth({
-      credentials: {
-        client_email: process.env.GOOGLE_CLIENT_EMAIL,
-        private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n'),
-      },
-      scopes: ['https://www.googleapis.com/auth/spreadsheets'],
-    });
-
+    const auth = new google.auth.GoogleAuth({ credentials: { client_email: process.env.GOOGLE_CLIENT_EMAIL, private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n'), }, scopes: ['https://www.googleapis.com/auth/spreadsheets'], });
     const sheets = google.sheets({ version: 'v4', auth });
     const spreadsheetId = process.env.GOOGLE_SHEET_ID;
 
-    // --- 1. Check and Update EXCOR Balance ---
     const excorSheetName = 'EXCORS';
-    const excorData = await sheets.spreadsheets.values.get({
-        spreadsheetId,
-        range: `${excorSheetName}!A:B`,
-    });
+    const excorData = await sheets.spreadsheets.values.get({ spreadsheetId, range: `${excorSheetName}!A:B`, });
     const excorRows = excorData.data.values || [];
-    const excorRowIndex = excorRows.findIndex(row => row[0] === excorName);
+    const excorRowIndex = excorRows.findIndex(row => row && row[0] === excorName);
 
-    if (excorRowIndex === -1) {
-        return { statusCode: 200, body: JSON.stringify({ status: 'error', message: `EXCOR '${excorName}' not found.` }) };
-    }
+    if (excorRowIndex === -1) { return { statusCode: 200, body: JSON.stringify({ status: 'error', message: `EXCOR '${excorName}' not found.` }) }; }
     const currentExcorBalance = parseInt(excorRows[excorRowIndex][1] || '0');
-
-    if (currentExcorBalance < points) {
-        return { statusCode: 200, body: JSON.stringify({ status: 'error', message: `Insufficient balance. You have ${currentExcorBalance} points.` }) };
-    }
+    if (currentExcorBalance < points) { return { statusCode: 200, body: JSON.stringify({ status: 'error', message: `Insufficient balance. You have ${currentExcorBalance} points.` }) }; }
     
     const newExcorBalance = currentExcorBalance - points;
     const excorCellToUpdate = `B${excorRowIndex + 1}`;
-    await sheets.spreadsheets.values.update({
-        spreadsheetId,
-        range: `${excorSheetName}!${excorCellToUpdate}`,
-        valueInputOption: 'USER_ENTERED',
-        resource: { values: [[newExcorBalance]] },
-    });
+    await sheets.spreadsheets.values.update({ spreadsheetId, range: `${excorSheetName}!${excorCellToUpdate}`, valueInputOption: 'USER_ENTERED', resource: { values: [[newExcorBalance]] }, });
 
-    // --- 2. Update EXCOR Points in the correct Weekly Sheet ---
-    const weekData = await sheets.spreadsheets.values.get({ spreadsheetId, range: `${currentWeekSheet}!A:AZ` });
+    const weekData = await sheets.spreadsheets.values.get({ spreadsheetId, range: `${currentWeekSheet}` });
     const rows = weekData.data.values || [];
     const eventHeaderRow = rows[0];
     const dateHeaderRow = rows[1];
 
     let targetColumnIndex = -1;
+    let debugInfo = { lastCheckedEvent: '', lastCheckedDate: '' };
+
     for (let i = 0; i < eventHeaderRow.length; i++) {
-        // --- CHANGE: Looking for "EXCOR Points" ---
-        if (((eventHeaderRow[i] || '').trim().toLowerCase() === 'excor points') && (dateHeaderRow[i] ? formatDate(new Date(dateHeaderRow[i])) : null) === todayString) {
-            targetColumnIndex = i;
-            break;
+        const sheetEvent = (eventHeaderRow[i] || '').trim().toLowerCase();
+        const headerDateStr = dateHeaderRow[i] || '';
+        debugInfo.lastCheckedEvent = sheetEvent;
+        debugInfo.lastCheckedDate = headerDateStr;
+
+        if (headerDateStr) {
+            const headerDate = formatDate(new Date(headerDateStr));
+            // --- CHANGE: Looking for "EXCOR Points" ---
+            if (sheetEvent === 'excor points' && headerDate === todayString) {
+                targetColumnIndex = i;
+                break;
+            }
         }
     }
 
     if (targetColumnIndex === -1) {
-        // If we fail here, we must refund the EXCOR's points
         await sheets.spreadsheets.values.update({ spreadsheetId, range: `${excorSheetName}!${excorCellToUpdate}`, valueInputOption: 'USER_ENTERED', resource: { values: [[currentExcorBalance]] } });
-        return { statusCode: 200, body: JSON.stringify({ status: 'error', message: `Could not find 'EXCOR Points' column for today in ${currentWeekSheet}.` }) };
+        // --- NEW: More detailed error message ---
+        return { statusCode: 200, body: JSON.stringify({ status: 'error', message: `Column not found. App needs date '${todayString}' & event 'EXCOR Points'. Last found: '${debugInfo.lastCheckedDate}' & '${debugInfo.lastCheckedEvent}'.` }) };
     }
 
     let targetRowIndex = -1;
@@ -132,26 +100,18 @@ exports.handler = async function (event) {
     const studentCellToUpdate = toA1(targetColumnIndex) + (targetRowIndex + 1);
     await sheets.spreadsheets.values.update({ spreadsheetId, range: `${currentWeekSheet}!${studentCellToUpdate}`, valueInputOption: 'USER_ENTERED', resource: { values: [[newStudentPoints]] } });
 
-    // --- 3. Log the transaction in the Points Sheet ---
     const pointsLogSheetName = 'Points';
     const dateForLog = saudiTime.toLocaleDateString('en-US', { timeZone: 'Asia/Riyadh' });
-    const pointsLogData = [dateForLog, studentName, excorName, pointsChange > 0 ? `+${pointsChange}` : pointsChange.toString(), reason, studentExcorGroup];
-    
+    let recorderDisplayName = `RA ${excorName}`;
+    if (isGiverCoordinator) { recorderDisplayName = `Coordinator ${excorName}`; }
+    const pointsLogData = [dateForLog, studentName, recorderDisplayName, pointsChange > 0 ? `+${pointsChange}` : pointsChange.toString(), reason, studentExcorGroup];
     await sheets.spreadsheets.values.append({ spreadsheetId, range: pointsLogSheetName, valueInputOption: 'USER_ENTERED', resource: { values: [pointsLogData] } });
     
     const actionVerb = action === 'add' ? 'Added' : 'Removed';
     const successMessage = `${actionVerb} ${points} points for ${studentName}!`;
-
-    return {
-      statusCode: 200,
-      body: JSON.stringify({ status: 'success', message: successMessage }),
-    };
-
+    return { statusCode: 200, body: JSON.stringify({ status: 'success', message: successMessage }), };
   } catch (error) {
     console.error('Function Error:', error);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ status: 'error', message: `An error occurred: ${error.message}` }),
-    };
+    return { statusCode: 500, body: JSON.stringify({ status: 'error', message: `An error occurred: ${error.message}` }), };
   }
 };
