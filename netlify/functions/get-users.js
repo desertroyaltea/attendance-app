@@ -14,7 +14,7 @@ exports.handler = async function (event) {
 
         // This line correctly reads the ID you set in your environment variables.
         // No changes are needed here.
-        const spreadsheetId = process.env.GOOGLE_SHEET_ID;
+        const spreadsheetId = process.env.USER_SHEET_ID;
         const sheetName = 'EXCORS';
 
         // Fetch Username (E), Password (F), and Type (G) starting from row 2
