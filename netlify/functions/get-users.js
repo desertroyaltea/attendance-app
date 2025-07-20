@@ -1,7 +1,6 @@
 const { google } = require('googleapis');
 
 exports.handler = async function (event) {
-    // This function does not require a POST request, it can be a GET
     try {
         const auth = new google.auth.GoogleAuth({
             credentials: {
@@ -12,6 +11,9 @@ exports.handler = async function (event) {
         });
 
         const sheets = google.sheets({ version: 'v4', auth });
+
+        // This line correctly reads the ID you set in your environment variables.
+        // No changes are needed here.
         const spreadsheetId = process.env.GOOGLE_SHEET_ID;
         const sheetName = 'EXCORS';
 
