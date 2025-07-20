@@ -81,21 +81,27 @@ exports.handler = async function (event) {
 
         if (type === 'group') {
             const groupData = {};
+            // First, gather points and unique student names for each group
             for (const student of aggregatedData) {
                 if (student.group) {
                     if (!groupData[student.group]) {
-                        groupData[student.group] = { points: 0, studentCount: 0 };
+                        // --- CHANGE: The data structure now holds a Set for unique names ---
+                        groupData[student.group] = { points: 0, studentNames: new Set() };
                     }
                     groupData[student.group].points += student.points;
-                    groupData[student.group].studentCount += 1;
+                    // --- CHANGE: Add the student's name to the Set (duplicates are ignored) ---
+                    groupData[student.group].studentNames.add(student.name);
                 }
             }
 
+            // Next, calculate the final adjusted score for each group
             for (const groupName in groupData) {
                 const group = groupData[groupName];
-                if (group.studentCount > 0) {
-                    const adjustedScore = (6 / group.studentCount) * group.points;
-                    // --- CHANGE: Round the final score to a whole number ---
+                // --- CHANGE: Get the count from the size of the Set of unique names ---
+                const studentCount = group.studentNames.size; 
+
+                if (studentCount > 0) {
+                    const adjustedScore = (6 / studentCount) * group.points;
                     finalScores[groupName] = Math.round(adjustedScore);
                 } else {
                     finalScores[groupName] = 0;
