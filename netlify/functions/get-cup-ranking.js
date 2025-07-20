@@ -30,7 +30,6 @@ async function calculateSheetData(sheets, spreadsheetId, sheetName) {
         let totalPoints = 0;
 
         for (const colIndex of pointColumnIndices) {
-            // --- FIX: Use parseFloat to preserve decimals from the sheet ---
             const points = parseFloat(studentRow[colIndex] || '0');
             if (!isNaN(points)) {
                 totalPoints += points;
@@ -41,6 +40,38 @@ async function calculateSheetData(sheets, spreadsheetId, sheetName) {
     }
 
     return studentData;
+}
+
+// --- NEW HELPER FUNCTION TO CALCULATE A SINGLE WEEK'S ADJUSTED GROUP SCORES ---
+async function getAdjustedGroupScores(sheets, spreadsheetId, sheetName) {
+    const weeklyRawData = await calculateSheetData(sheets, spreadsheetId, sheetName);
+    const weeklyGroupData = {};
+    const weeklyFinalScores = {};
+
+    // Gather points and unique student names for the week
+    for (const student of weeklyRawData) {
+        if (student.group) {
+            if (!weeklyGroupData[student.group]) {
+                weeklyGroupData[student.group] = { points: 0, studentNames: new Set() };
+            }
+            weeklyGroupData[student.group].points += student.points;
+            weeklyGroupData[student.group].studentNames.add(student.name);
+        }
+    }
+
+    // Calculate the final adjusted score for the week
+    for (const groupName in weeklyGroupData) {
+        const group = weeklyGroupData[groupName];
+        const studentCount = group.studentNames.size;
+
+        if (studentCount > 0) {
+            const adjustedScore = (6 / studentCount) * group.points;
+            weeklyFinalScores[groupName] = Math.round(adjustedScore);
+        } else {
+            weeklyFinalScores[groupName] = 0;
+        }
+    }
+    return weeklyFinalScores;
 }
 
 
@@ -66,46 +97,37 @@ exports.handler = async function (event) {
         const sheets = google.sheets({ version: 'v4', auth });
         const spreadsheetId = process.env.GOOGLE_SHEET_ID;
 
-        let aggregatedData = [];
-
-        if (week.toLowerCase() === 'total') {
-            const weekSheets = ['Week1', 'Week2', 'Week3', 'Week4', 'Week5', 'Week6'];
-            for (const sheetName of weekSheets) {
-                const weeklyData = await calculateSheetData(sheets, spreadsheetId, sheetName);
-                aggregatedData = aggregatedData.concat(weeklyData);
-            }
-        } else {
-            aggregatedData = await calculateSheetData(sheets, spreadsheetId, week);
-        }
-
         let finalScores = {};
 
         if (type === 'group') {
-            const groupData = {};
-            // First, gather points and unique student names for each group
-            for (const student of aggregatedData) {
-                if (student.group) {
-                    if (!groupData[student.group]) {
-                        groupData[student.group] = { points: 0, studentNames: new Set() };
+            // --- REBUILT LOGIC FOR GROUP CALCULATIONS ---
+            if (week.toLowerCase() === 'total') {
+                const weekSheets = ['Week1', 'Week2', 'Week3', 'Week4', 'Week5', 'Week6'];
+                for (const sheetName of weekSheets) {
+                    // Get the adjusted scores for each week individually
+                    const weeklyAdjustedScores = await getAdjustedGroupScores(sheets, spreadsheetId, sheetName);
+                    // Add them to the running total
+                    for (const groupName in weeklyAdjustedScores) {
+                        finalScores[groupName] = (finalScores[groupName] || 0) + weeklyAdjustedScores[groupName];
                     }
-                    groupData[student.group].points += student.points;
-                    groupData[student.group].studentNames.add(student.name);
                 }
+            } else {
+                // For a single week, just get its adjusted scores
+                finalScores = await getAdjustedGroupScores(sheets, spreadsheetId, week);
             }
-
-            // Next, calculate the final adjusted score for each group
-            for (const groupName in groupData) {
-                const group = groupData[groupName];
-                const studentCount = group.studentNames.size; 
-
-                if (studentCount > 0) {
-                    const adjustedScore = (6 / studentCount) * group.points;
-                    finalScores[groupName] = Math.round(adjustedScore);
-                } else {
-                    finalScores[groupName] = 0;
+        } else { 
+            // Student logic remains the same (gathers all data then sums)
+            let aggregatedData = [];
+             if (week.toLowerCase() === 'total') {
+                const weekSheets = ['Week1', 'Week2', 'Week3', 'Week4', 'Week5', 'Week6'];
+                for (const sheetName of weekSheets) {
+                    const weeklyData = await calculateSheetData(sheets, spreadsheetId, sheetName);
+                    aggregatedData = aggregatedData.concat(weeklyData);
                 }
+            } else {
+                aggregatedData = await calculateSheetData(sheets, spreadsheetId, week);
             }
-        } else { // Default to student ranking
+            // Sum points by student name
             for (const student of aggregatedData) {
                 if (student.name) {
                     finalScores[student.name] = (finalScores[student.name] || 0) + student.points;
