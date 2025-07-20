@@ -3,7 +3,7 @@ const { google } = require('googleapis');
 async function calculateSheetData(sheets, spreadsheetId, sheetName) {
     const response = await sheets.spreadsheets.values.get({
         spreadsheetId,
-        range: sheetName, 
+        range: sheetName,
     });
 
     const rows = response.data.values || [];
@@ -23,22 +23,23 @@ async function calculateSheetData(sheets, spreadsheetId, sheetName) {
 
     for (let i = 3; i < rows.length; i++) {
         const studentRow = rows[i];
-        if (!studentRow || !studentRow[1] || !studentRow[2]) continue; 
+        if (!studentRow || !studentRow[1] || !studentRow[2]) continue;
 
         const studentName = studentRow[1].trim();
         const excorGroup = studentRow[2].trim();
         let totalPoints = 0;
 
         for (const colIndex of pointColumnIndices) {
-            const points = parseInt(studentRow[colIndex] || '0');
+            // --- FIX: Use parseFloat to preserve decimals from the sheet ---
+            const points = parseFloat(studentRow[colIndex] || '0');
             if (!isNaN(points)) {
                 totalPoints += points;
             }
         }
-        
+
         studentData.push({ name: studentName, group: excorGroup, points: totalPoints });
     }
-    
+
     return studentData;
 }
 
@@ -85,11 +86,9 @@ exports.handler = async function (event) {
             for (const student of aggregatedData) {
                 if (student.group) {
                     if (!groupData[student.group]) {
-                        // --- CHANGE: The data structure now holds a Set for unique names ---
                         groupData[student.group] = { points: 0, studentNames: new Set() };
                     }
                     groupData[student.group].points += student.points;
-                    // --- CHANGE: Add the student's name to the Set (duplicates are ignored) ---
                     groupData[student.group].studentNames.add(student.name);
                 }
             }
@@ -97,7 +96,6 @@ exports.handler = async function (event) {
             // Next, calculate the final adjusted score for each group
             for (const groupName in groupData) {
                 const group = groupData[groupName];
-                // --- CHANGE: Get the count from the size of the Set of unique names ---
                 const studentCount = group.studentNames.size; 
 
                 if (studentCount > 0) {
