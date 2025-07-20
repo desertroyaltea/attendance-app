@@ -1,3 +1,55 @@
+const { google } = require('googleapis');
+
+// This function now calculates points and returns student names, their group, and their points.
+async function calculateSheetData(sheets, spreadsheetId, sheetName) {
+    const response = await sheets.spreadsheets.values.get({
+        spreadsheetId,
+        // --- CHANGE 1: The range is now dynamic and will read all columns in the sheet ---
+        range: sheetName, 
+    });
+
+    const rows = response.data.values || [];
+    if (rows.length < 4) {
+        return []; // Return empty array if not enough data
+    }
+
+    const eventHeaderRow = rows[0]; // Events are in Row 1
+    const studentData = [];
+
+    // Find all columns that are 'Daily Points'
+    const pointColumnIndices = [];
+    for (let i = 3; i < eventHeaderRow.length; i++) { // Start from column D (index 3)
+        // --- CHANGE 2: Looking for "Daily Points" instead of "Daily Points" ---
+        if ((eventHeaderRow[i] || '').trim().toLowerCase() === 'daily points') {
+            pointColumnIndices.push(i);
+        }
+    }
+
+    // Iterate through student rows (starting from row 4, which is index 3)
+    for (let i = 3; i < rows.length; i++) {
+        const studentRow = rows[i];
+        // Ensure row has a student name (col B, index 1) and an EXCOR group (col C, index 2)
+        if (!studentRow || !studentRow[1] || !studentRow[2]) continue; 
+
+        const studentName = studentRow[1].trim();
+        const excorGroup = studentRow[2].trim();
+        let totalPoints = 0;
+
+        // Sum points only from the 'Daily Points' columns
+        for (const colIndex of pointColumnIndices) {
+            const points = parseInt(studentRow[colIndex] || '0');
+            if (!isNaN(points)) {
+                totalPoints += points;
+            }
+        }
+        
+        studentData.push({ name: studentName, group: excorGroup, points: totalPoints });
+    }
+    
+    return studentData;
+}
+
+
 exports.handler = async function (event) {
     if (event.httpMethod !== 'POST') {
         return { statusCode: 405, body: 'Method Not Allowed' };
@@ -32,8 +84,6 @@ exports.handler = async function (event) {
             aggregatedData = await calculateSheetData(sheets, spreadsheetId, week);
         }
 
-        // --- MODIFIED SECTION START ---
-        
         let finalScores = {};
 
         if (type === 'group') {
@@ -59,15 +109,13 @@ exports.handler = async function (event) {
                     finalScores[groupName] = 0;
                 }
             }
-        } else { // Default to student ranking (no change here)
+        } else { // Default to student ranking
             for (const student of aggregatedData) {
                 if (student.name) {
                     finalScores[student.name] = (finalScores[student.name] || 0) + student.points;
                 }
             }
         }
-
-        // --- MODIFIED SECTION END ---
 
         // Convert the final scores map to an array and sort it
         const rankedList = Object.entries(finalScores)
