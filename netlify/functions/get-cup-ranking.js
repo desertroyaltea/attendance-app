@@ -1,62 +1,10 @@
-const { google } = require('googleapis');
-
-// This function now calculates points and returns student names, their group, and their points.
-async function calculateSheetData(sheets, spreadsheetId, sheetName) {
-    const response = await sheets.spreadsheets.values.get({
-        spreadsheetId,
-        // --- CHANGE 1: The range is now dynamic and will read all columns in the sheet ---
-        range: sheetName, 
-    });
-
-    const rows = response.data.values || [];
-    if (rows.length < 4) {
-        return []; // Return empty array if not enough data
-    }
-
-    const eventHeaderRow = rows[0]; // Events are in Row 1
-    const studentData = [];
-
-    // Find all columns that are 'Daily Points'
-    const pointColumnIndices = [];
-    for (let i = 3; i < eventHeaderRow.length; i++) { // Start from column D (index 3)
-        // --- CHANGE 2: Looking for "Daily Points" instead of "Daily Points" ---
-        if ((eventHeaderRow[i] || '').trim().toLowerCase() === 'daily points') {
-            pointColumnIndices.push(i);
-        }
-    }
-
-    // Iterate through student rows (starting from row 4, which is index 3)
-    for (let i = 3; i < rows.length; i++) {
-        const studentRow = rows[i];
-        // Ensure row has a student name (col B, index 1) and an EXCOR group (col C, index 2)
-        if (!studentRow || !studentRow[1] || !studentRow[2]) continue; 
-
-        const studentName = studentRow[1].trim();
-        const excorGroup = studentRow[2].trim();
-        let totalPoints = 0;
-
-        // Sum points only from the 'Daily Points' columns
-        for (const colIndex of pointColumnIndices) {
-            const points = parseInt(studentRow[colIndex] || '0');
-            if (!isNaN(points)) {
-                totalPoints += points;
-            }
-        }
-        
-        studentData.push({ name: studentName, group: excorGroup, points: totalPoints });
-    }
-    
-    return studentData;
-}
-
-
 exports.handler = async function (event) {
     if (event.httpMethod !== 'POST') {
         return { statusCode: 405, body: 'Method Not Allowed' };
     }
 
     try {
-        const { week, type } = JSON.parse(event.body); // Now expects 'type' (student or group)
+        const { week, type } = JSON.parse(event.body);
         if (!week || !type) {
             return { statusCode: 400, body: JSON.stringify({ message: 'Week or type not specified.' }) };
         }
@@ -76,7 +24,7 @@ exports.handler = async function (event) {
 
         if (week.toLowerCase() === 'total') {
             const weekSheets = ['Week1', 'Week2', 'Week3', 'Week4', 'Week5', 'Week6'];
-            for(const sheetName of weekSheets) {
+            for (const sheetName of weekSheets) {
                 const weeklyData = await calculateSheetData(sheets, spreadsheetId, sheetName);
                 aggregatedData = aggregatedData.concat(weeklyData);
             }
@@ -84,27 +32,45 @@ exports.handler = async function (event) {
             aggregatedData = await calculateSheetData(sheets, spreadsheetId, week);
         }
 
-        let finalPoints = {};
+        // --- MODIFIED SECTION START ---
+        
+        let finalScores = {};
 
         if (type === 'group') {
-            // Aggregate points by EXCOR group
+            const groupData = {};
+            // First, gather points and student counts for each group
             for (const student of aggregatedData) {
-                if(student.group){
-                   finalPoints[student.group] = (finalPoints[student.group] || 0) + student.points;
+                if (student.group) {
+                    if (!groupData[student.group]) {
+                        groupData[student.group] = { points: 0, studentCount: 0 };
+                    }
+                    groupData[student.group].points += student.points;
+                    groupData[student.group].studentCount += 1;
                 }
             }
-        } else { // Default to student ranking
-            // Aggregate points by student name
-             for (const student of aggregatedData) {
-                if(student.name){
-                   finalPoints[student.name] = (finalPoints[student.name] || 0) + student.points;
+
+            // Next, calculate the final adjusted score for each group
+            for (const groupName in groupData) {
+                const group = groupData[groupName];
+                if (group.studentCount > 0) {
+                    // Apply the adjustment formula
+                    finalScores[groupName] = (6 / group.studentCount) * group.points;
+                } else {
+                    finalScores[groupName] = 0;
+                }
+            }
+        } else { // Default to student ranking (no change here)
+            for (const student of aggregatedData) {
+                if (student.name) {
+                    finalScores[student.name] = (finalScores[student.name] || 0) + student.points;
                 }
             }
         }
 
+        // --- MODIFIED SECTION END ---
 
-        // Convert the aggregated points map to an array and sort it
-        const rankedList = Object.entries(finalPoints)
+        // Convert the final scores map to an array and sort it
+        const rankedList = Object.entries(finalScores)
             .map(([name, points]) => ({ name, points }))
             .sort((a, b) => b.points - a.points);
 
